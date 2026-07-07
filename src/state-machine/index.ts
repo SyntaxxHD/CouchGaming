@@ -7,6 +7,7 @@ type State = 'Desktop' | 'Gaming'
 interface Snapshot {
   audioCommandLineId: string | null
   audioLabel: string
+  originalPrimaryId: string | null
 }
 
 export interface StateMachine {
@@ -40,9 +41,19 @@ export function createStateMachine(config: Config): StateMachine {
     } catch (err) {
       await logger.warn('sm.open.audio-enum-failed', { err: String(err) })
     }
+
+    let primaryId: string | null = null
+    try {
+      const primary = await displays.getPrimary()
+      primaryId = primary?.id ?? null
+    } catch (err) {
+      await logger.warn('sm.open.primary-enum-failed', { err: String(err) })
+    }
+
     snapshot = {
       audioCommandLineId: currentAudio?.commandLineId ?? null,
       audioLabel: currentAudio?.name ?? '(unknown)',
+      originalPrimaryId: primaryId,
     }
 
     try {
@@ -50,6 +61,12 @@ export function createStateMachine(config: Config): StateMachine {
     } catch (err) {
       await logger.error('sm.open.tv-enable-failed', { err: String(err), tvId })
       return
+    }
+
+    try {
+      await displays.setPrimary(tvId)
+    } catch (err) {
+      await logger.warn('sm.open.setprimary-tv-failed', { err: String(err), tvId })
     }
 
     try {
@@ -81,6 +98,21 @@ export function createStateMachine(config: Config): StateMachine {
       await displays.enableMonitors(desktopIds)
     } catch (err) {
       await logger.error('sm.close.desktop-enable-failed', { err: String(err), ids: desktopIds })
+    }
+
+    const restorePrimary = snapshot?.originalPrimaryId ?? desktopIds[0]
+    if (!snapshot?.originalPrimaryId) {
+      await logger.warn('sm.close.no-primary-snapshot', { fallback: restorePrimary })
+    }
+    if (restorePrimary) {
+      try {
+        await displays.setPrimary(restorePrimary)
+      } catch (err) {
+        await logger.warn('sm.close.setprimary-restore-failed', {
+          err: String(err),
+          id: restorePrimary,
+        })
+      }
     }
 
     try {

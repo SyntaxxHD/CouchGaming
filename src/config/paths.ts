@@ -11,10 +11,10 @@ export const paths = {
   toolsDir,
   configFile: join(appDir, 'config.json'),
   logFile: join(appDir, 'log.txt'),
-  lockFile: join(appDir, 'daemon.lock'),
+  lockFile: join(appDir, 'session.lock'),
   legacyGamingCfg: join(appDir, 'gaming.cfg'),
   legacyDesktopSnapshot: join(appDir, 'runtime-desktop.cfg'),
+  legacyDaemonLock: join(appDir, 'daemon.lock'),
   multiMonitorTool: join(toolsDir, 'MultiMonitorTool.exe'),
   soundVolumeView: join(toolsDir, 'SoundVolumeView.exe'),
-  guiPropView: join(toolsDir, 'GUIPropView.exe'),
 } as const

@@ -1,17 +1,15 @@
 import mmt from '../tools/MultiMonitorTool.exe' with { type: 'file' }
 import svv from '../tools/SoundVolumeView.exe' with { type: 'file' }
-import gpv from '../tools/GUIPropView.exe' with { type: 'file' }
 import chalk from 'chalk'
-import { runDaemon } from './daemon.ts'
+import { runSession } from './session.ts'
 import { runFirstRun, runReconfigure } from './wizard/index.ts'
-import { installShortcut, uninstallShortcut } from './autostart/install.ts'
+import { installShortcut, uninstallShortcut } from './shortcut/install.ts'
 import { ensureExtracted } from './tools-bootstrap/index.ts'
 import { logger, setConsoleEcho, setVerbose } from './logger/index.ts'
 
 const embeddedTools: Record<string, Blob> = {
   'MultiMonitorTool.exe': Bun.file(mmt),
   'SoundVolumeView.exe': Bun.file(svv),
-  'GUIPropView.exe': Bun.file(gpv),
 }
 
 async function main(): Promise<void> {
@@ -31,16 +29,16 @@ async function main(): Promise<void> {
     process.exit(2)
   }
 
-  if (args.has('--install-autostart')) {
+  if (args.has('--install-shortcut')) {
     setConsoleEcho(true)
     await installShortcut()
-    console.log(chalk.green('OK') + ' autostart installed.')
+    console.log(chalk.green('OK') + ' Start Menu shortcut installed.')
     return
   }
-  if (args.has('--uninstall-autostart')) {
+  if (args.has('--uninstall-shortcut')) {
     setConsoleEcho(true)
     const removed = await uninstallShortcut()
-    console.log(removed ? chalk.green('OK') + ' autostart removed.' : 'No autostart shortcut found.')
+    console.log(removed ? chalk.green('OK') + ' Start Menu shortcut removed.' : 'No shortcut found.')
     return
   }
   if (args.has('--reconfigure')) {
@@ -52,7 +50,7 @@ async function main(): Promise<void> {
     return
   }
 
-  await runDaemon()
+  await runSession()
 }
 
 main().catch(async err => {

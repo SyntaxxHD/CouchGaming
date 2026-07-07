@@ -18,10 +18,4 @@ export const TOOL_MANIFEST: readonly ToolManifestEntry[] = [
     zipUrl: 'https://www.nirsoft.net/utils/soundvolumeview-x64.zip',
     memberInZip: 'SoundVolumeView.exe',
   },
-  {
-    filename: 'GUIPropView.exe',
-    sha256: '4618d31131b1687364ea76ae7de171f0920d20cdc55a329e5cafdc3ea9892f4e',
-    zipUrl: 'https://www.nirsoft.net/utils/guipropview-x64.zip',
-    memberInZip: 'GUIPropView.exe',
-  },
 ] as const

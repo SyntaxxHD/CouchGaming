@@ -7,7 +7,6 @@ import { logger } from '../logger/index.ts'
 const FILE_TO_PATH: Record<string, string> = {
   'MultiMonitorTool.exe': paths.multiMonitorTool,
   'SoundVolumeView.exe': paths.soundVolumeView,
-  'GUIPropView.exe': paths.guiPropView,
 }
 
 export async function ensureExtracted(embedded: Record<string, Blob>): Promise<void> {

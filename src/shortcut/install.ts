@@ -4,7 +4,7 @@ import { run } from '../tool-runner/index.ts'
 
 function shortcutPath(): string {
   const appdata = process.env.APPDATA ?? ''
-  return join(appdata, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'Startup', 'CouchGaming.lnk')
+  return join(appdata, 'Microsoft', 'Windows', 'Start Menu', 'Programs', 'CouchGaming.lnk')
 }
 
 function exePath(): string {
@@ -25,8 +25,8 @@ export async function installShortcut(): Promise<void> {
     `$l.TargetPath = '${escExe}'`,
     `$l.WorkingDirectory = '${escWork}'`,
     `$l.IconLocation = '${escExe},0'`,
-    `$l.WindowStyle = 7`,
-    `$l.Description = 'CouchGaming background daemon'`,
+    `$l.WindowStyle = 1`,
+    `$l.Description = 'Launch Steam Big Picture with TV output'`,
     `$l.Save()`,
   ].join('; ')
 

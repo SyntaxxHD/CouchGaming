@@ -1,63 +1,65 @@
 # CouchGaming
 
-Windows background daemon that flips your monitors and audio output when Steam Big Picture opens, and restores them when it closes.
+One-shot Windows launcher for Steam Big Picture with your TV as the only active display.
 
 ## What it does
 
-- Polls Windows every ~2 s for a top-level Big Picture window (owned by `steamwebhelper.exe` or `steam.exe`).
-- When Big Picture opens: snapshots your current monitor layout and default audio device, then switches to a preconfigured TV-only layout and audio device.
-- When Big Picture closes: restores the snapshot.
+Run `CouchGaming.exe`. It:
 
-Runs hidden in the background. No tray icon, no console window.
+1. Enables your TV, makes it primary, disables your other monitors, switches audio to your TV output.
+2. Opens Steam in Big Picture Mode (starts Steam first if it isn't already running).
+3. Waits for you to quit Steam.
+4. Restores your original monitor layout, primary display, and audio device.
+
+No background daemon, no polling, no tray icon. When Steam exits, CouchGaming exits.
 
 ## Install
 
 1. Download `CouchGaming.exe` from the latest [Release](../../releases).
-2. Run `CouchGaming.exe --reconfigure` from a real terminal (Windows Terminal or `cmd`). The first-run wizard walks you through picking your TV monitor, TV audio device, and (optionally) installing an autostart shortcut.
-3. Launch the daemon: `CouchGaming.exe` from a terminal to see live output, or let the Startup shortcut do it silently at login.
+2. Run `CouchGaming.exe --reconfigure` in Windows Terminal or `cmd` for first-run setup: pick your TV, pick your TV audio output, optionally add a Start Menu shortcut.
+3. Launch `CouchGaming.exe` (from the shortcut or a terminal) whenever you want to go gaming.
 
 ## Flags
 
 ```
-CouchGaming.exe                     # run the daemon
-CouchGaming.exe --reconfigure       # re-run the setup wizard
-CouchGaming.exe --wizard            # first-run wizard (used automatically)
-CouchGaming.exe --install-autostart
-CouchGaming.exe --uninstall-autostart
-CouchGaming.exe --verbose           # echo debug lines to the terminal
+CouchGaming.exe                       # go gaming (first run: runs the wizard first)
+CouchGaming.exe --reconfigure         # re-run the setup wizard
+CouchGaming.exe --wizard              # first-run wizard (used automatically)
+CouchGaming.exe --install-shortcut    # add a Start Menu shortcut
+CouchGaming.exe --uninstall-shortcut  # remove it
+CouchGaming.exe --verbose             # echo debug lines to the terminal
 ```
 
 ## How it works
 
-CouchGaming bundles three portable NirSoft utilities (`MultiMonitorTool.exe`, `SoundVolumeView.exe`, `GUIPropView.exe`) that are extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch and driven via CLI. Detection works by enumerating all visible top-level windows and looking for one owned by `steamwebhelper.exe` or `steam.exe` whose title contains "big picture" (or a known localized equivalent). Config lives at `%APPDATA%\CouchGaming\config.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
+CouchGaming bundles two portable NirSoft utilities (`MultiMonitorTool.exe`, `SoundVolumeView.exe`) that are extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch. Big Picture is launched via the `steam://open/bigpicture` URL. Steam's exit is detected event-driven via PowerShell's `Wait-Process` (zero CPU while you play). Config lives at `%APPDATA%\CouchGaming\config.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
 
 ## Diagnostics
 
-The daemon writes JSON-lines to `%APPDATA%\CouchGaming\log.txt`. If Big Picture is not triggering, open the log and look for these markers:
+The session writes JSON-lines to `%APPDATA%\CouchGaming\log.txt`. Key markers:
 
-| Log line                                                 | Meaning                                                                                                                                                                                                    |
-| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `daemon.started`                                         | Daemon reached the poll loop. If missing, the daemon crashed early or is stuck.                                                                                                                            |
-| `tool.run` with `exe: "GUIPropView.exe"` every ~2 s      | Window enumeration is running.                                                                                                                                                                             |
-| `watcher.gpv-first-scan`                                 | First successful scan. Includes `totalRows`, `steamRows`, `matched` (title or null), and a sample of Steam-owned rows so you can see what titles Steam is exposing. Paste this if detection is not firing. |
-| `watcher.gpv-parse-empty`                                | GUIPropView returned no rows. Rare; usually means the CSV file could not be read back.                                                                                                                     |
-| `watcher.gpv-failed`                                     | Spawning GUIPropView failed. Check the `err` field.                                                                                                                                                        |
-| `watcher.scan-failed`                                    | A scan attempt threw. Poll backs off to 5 s and retries.                                                                                                                                                   |
-| `daemon.no-config-non-interactive`                       | Daemon was launched without a config file and no interactive terminal. Run `--reconfigure`. Exit code 4.                                                                                                   |
-| `wizard.no-tty`                                          | The wizard was invoked with no interactive stdin. Exit code 3.                                                                                                                                             |
-| `daemon.lock-stale-taking-over`                          | An old lock file was left behind and we recovered it.                                                                                                                                                      |
-| `sm.open.snapshot-failed`, `sm.open.display-load-failed` | Big Picture was detected, but MultiMonitorTool failed. Check the `err` field.                                                                                                                              |
-| `gaming.enter`, `gaming.exit`                            | Successful transitions.                                                                                                                                                                                    |
+| Log line                            | Meaning                                                             |
+| ----------------------------------- | ------------------------------------------------------------------- |
+| `session.entering-gaming`           | State-machine handoff to gaming mode is starting.                   |
+| `sm.open.*`                         | Monitor and audio switch during enter. See `err` fields on failure. |
+| `session.launching-bigpicture`      | We fired the `steam://open/bigpicture` URL.                         |
+| `session.steam-pid-found`           | Found the `steam.exe` PID we will wait on.                          |
+| `session.waiting-for-steam`         | Event-driven wait via PowerShell `Wait-Process`. Idle from here.    |
+| `session.steam-exited`              | Steam quit. Reverting.                                              |
+| `sm.close.*`                        | Monitor and audio restore during exit.                              |
+| `session.done`                      | Successful clean exit.                                              |
+| `session.steam-not-launched`        | No `steam.exe` appeared within 30 s. Session reverted. Exit code 5. |
+| `session.no-config-non-interactive` | No config and no terminal to run the wizard. Exit code 4.           |
+| `session.lock-stale-taking-over`    | A previous CouchGaming session left a stale lock; we recovered it.  |
+| `session.interrupted`               | User hit Ctrl+C. Revert path still runs before exit.                |
 
-Manual test that Steam is exposing a window whose title contains "Big Picture" (from `cmd`, while Big Picture is open):
+Manual sanity check that the Big Picture URL handler works on your machine (from `cmd`):
 
 ```
-tasklist /v /fi "IMAGENAME eq steamwebhelper.exe" /fo list
+start "" steam://open/bigpicture
 ```
 
-Look for a `Window Title:` line containing "Big Picture" (or your locale's equivalent). If the title is genuinely different, capture it with `watcher.gpv-first-scan` (run the daemon with `--verbose`) and open an issue.
-
-If you notice a GUIPropView window briefly flashing on the screen every couple of seconds, that is a bug. Open an issue.
+Steam should open into Big Picture. If nothing happens, Steam is not installed or the URL handler is broken; fix that before running CouchGaming.
 
 ## Build
 
@@ -72,7 +74,8 @@ The `build` script runs `scripts/fetch-tools.ts` first, which downloads the NirS
 
 ## Caveats
 
-- CouchGaming controls which monitors are on, not their resolutions or positions. Windows remembers per-monitor settings across enable/disable, so this is usually invisible; if you rearrange monitors mid-session, Windows keeps the new arrangement after exit.
-- If you plug in a new monitor after setup, run `--reconfigure` so the daemon knows to disable it in gaming mode.
-- Config schema changes require running `--reconfigure`. Old configs are backed up to `config.corrupt-<timestamp>.json` and the daemon exits with code 4.
+- Big Picture close alone does not revert; you must quit Steam entirely. The trade-off buys us zero polling during gameplay.
+- CouchGaming controls which monitors are on, not their resolutions or positions. Windows remembers per-monitor settings across enable/disable, so this is usually invisible.
+- If you plug in a new monitor after setup, run `--reconfigure` so CouchGaming knows to disable it during gaming.
+- Config schema changes require running `--reconfigure`. Old configs are backed up to `config.corrupt-<timestamp>.json` and the session exits with code 4.
 - Unsigned binary; Windows SmartScreen will warn on first launch.

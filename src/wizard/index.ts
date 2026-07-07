@@ -5,7 +5,7 @@ import { saveConfig, loadConfig, newConfig } from '../config/store.ts'
 import type { Config, MonitorRef } from '../config/schema.ts'
 import * as displays from '../display-manager/index.ts'
 import * as audio from '../audio-manager/index.ts'
-import { installShortcut } from '../autostart/install.ts'
+import { installShortcut } from '../shortcut/install.ts'
 import { logger, setConsoleEcho } from '../logger/index.ts'
 
 export async function runFirstRun(): Promise<void> {
@@ -26,10 +26,10 @@ export async function runFirstRun(): Promise<void> {
   await saveConfig(config)
   console.log(chalk.green('OK') + ` config written to ${chalk.cyan(paths.configFile)}`)
 
-  await offerAutostart()
+  await offerShortcut()
 
   console.log('')
-  console.log(chalk.green('Setup complete.') + ' Launch Steam Big Picture to test.')
+  console.log(chalk.green('Setup complete.') + ' Launch CouchGaming to go gaming.')
 }
 
 export async function runReconfigure(): Promise<void> {
@@ -46,7 +46,7 @@ export async function runReconfigure(): Promise<void> {
       { title: 'Audio device only', value: 'audio' },
       { title: 'Displays (pick a new TV / redetect desktop monitors)', value: 'display' },
       { title: 'Both', value: 'both' },
-      { title: 'Autostart (install/uninstall)', value: 'autostart' },
+      { title: 'Start Menu shortcut (install/uninstall)', value: 'shortcut' },
       { title: 'Cancel', value: 'cancel' },
     ],
   })
@@ -64,8 +64,8 @@ export async function runReconfigure(): Promise<void> {
     if (!display) return abort()
     updated = { ...updated, display }
   }
-  if (section === 'autostart') {
-    await offerAutostart()
+  if (section === 'shortcut') {
+    await offerShortcut()
     return
   }
 
@@ -167,19 +167,19 @@ async function pickAudio(): Promise<Config['audio'] | null> {
   }
 }
 
-async function offerAutostart(): Promise<void> {
+async function offerShortcut(): Promise<void> {
   const { install } = await prompts({
     type: 'confirm',
     name: 'install',
-    message: 'Install autostart shortcut so CouchGaming runs at login?',
+    message: 'Create a Start Menu shortcut for CouchGaming?',
     initial: true,
   })
   if (!install) return
   try {
     await installShortcut()
-    console.log(chalk.green('OK') + ' autostart shortcut installed.')
+    console.log(chalk.green('OK') + ' Start Menu shortcut installed.')
   } catch (err) {
-    console.log(chalk.red('Autostart install failed:') + ` ${String(err)}`)
+    console.log(chalk.red('Shortcut install failed:') + ` ${String(err)}`)
   }
 }
 

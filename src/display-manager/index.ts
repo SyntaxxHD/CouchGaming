@@ -62,6 +62,18 @@ export async function disableMonitors(ids: string[]): Promise<void> {
   await sleep(INTER_CALL_DELAY_MS)
 }
 
+export async function setPrimary(id: string): Promise<void> {
+  if (!id) return
+  await run(paths.multiMonitorTool, ['/SetPrimary', id])
+  await sleep(INTER_CALL_DELAY_MS)
+}
+
+export async function getPrimary(): Promise<StableId | null> {
+  const list = await enumerate()
+  const row = list.find(d => d.active && d.primary && !d.disconnected)
+  return row ? stableId(row) : null
+}
+
 function sleep(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms))
 }
