@@ -13,6 +13,8 @@ export interface DisplayInfo {
   shortId: string
   serial: string
   resolution: string
+  left: number | null
+  top: number | null
   active: boolean
   primary: boolean
   disconnected: boolean
@@ -62,6 +64,12 @@ export async function disableMonitors(ids: string[]): Promise<void> {
   await sleep(INTER_CALL_DELAY_MS)
 }
 
+export async function enableAtPosition(id: string, left: number, top: number): Promise<void> {
+  if (!id) return
+  await run(paths.multiMonitorTool, ['/EnableAtPosition', id, String(left), String(top)])
+  await sleep(INTER_CALL_DELAY_MS)
+}
+
 export async function setPrimary(id: string): Promise<void> {
   if (!id) return
   await run(paths.multiMonitorTool, ['/SetPrimary', id])
@@ -87,8 +95,16 @@ function toDisplayInfo(row: Record<string, string>): DisplayInfo {
     shortId: row['Short Monitor ID'] ?? '',
     serial: row['Serial Number'] ?? '',
     resolution: row['Resolution'] ?? '',
+    left: parseIntOrNull(row['Left']),
+    top: parseIntOrNull(row['Top']),
     active: yes(row['Active']),
     primary: yes(row['Primary']),
     disconnected: yes(row['Disconnected']),
   }
+}
+
+function parseIntOrNull(raw: string | undefined): number | null {
+  if (raw === undefined) return null
+  const n = parseInt(raw.trim(), 10)
+  return Number.isFinite(n) ? n : null
 }

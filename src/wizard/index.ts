@@ -115,6 +115,7 @@ async function pickDisplay(): Promise<Config['display'] | null> {
     id: tvId.id,
     idKind: tvId.idKind,
     label: labelFor(tvRow),
+    position: positionOf(tvRow),
   }
 
   const desktopMonitors: MonitorRef[] = []
@@ -126,12 +127,21 @@ async function pickDisplay(): Promise<Config['display'] | null> {
       console.log(chalk.yellow(`Skipping "${labelFor(row)}": no stable ID.`))
       continue
     }
-    desktopMonitors.push({ id: sid.id, idKind: sid.idKind, label: labelFor(row) })
+    desktopMonitors.push({
+      id: sid.id,
+      idKind: sid.idKind,
+      label: labelFor(row),
+      position: positionOf(row),
+    })
   }
 
+  const desktopSummary =
+    desktopMonitors
+      .map(m => `${m.label}${m.position ? ` (at ${m.position.left},${m.position.top})` : ' (no position)'}`)
+      .join(', ') || '(none)'
   console.log(
     chalk.gray(
-      `Gaming: ${gamingMonitor.label}. Desktop monitors that will disable on Big Picture: ${desktopMonitors.map(m => m.label).join(', ') || '(none)'}`,
+      `Gaming: ${gamingMonitor.label}. Desktop monitors that will disable on Big Picture: ${desktopSummary}`,
     ),
   )
 
@@ -140,6 +150,11 @@ async function pickDisplay(): Promise<Config['display'] | null> {
 
 function labelFor(row: displays.DisplayInfo): string {
   return row.monitorName || row.shortId || row.name || 'Unknown monitor'
+}
+
+function positionOf(row: displays.DisplayInfo): MonitorRef['position'] {
+  if (row.left === null || row.top === null) return null
+  return { left: row.left, top: row.top }
 }
 
 async function pickAudio(): Promise<Config['audio'] | null> {

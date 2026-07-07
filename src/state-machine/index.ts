@@ -21,7 +21,8 @@ export function createStateMachine(config: Config): StateMachine {
   let busy: Promise<unknown> = Promise.resolve()
 
   const tvId = config.display.gamingMonitor.id
-  const desktopIds = config.display.desktopMonitors.map(m => m.id)
+  const desktopMonitors = config.display.desktopMonitors
+  const desktopIds = desktopMonitors.map(m => m.id)
 
   function serialize<T>(fn: () => Promise<T>): Promise<T> {
     const next = busy.then(fn, fn)
@@ -94,10 +95,21 @@ export function createStateMachine(config: Config): StateMachine {
       return
     }
 
-    try {
-      await displays.enableMonitors(desktopIds)
-    } catch (err) {
-      await logger.error('sm.close.desktop-enable-failed', { err: String(err), ids: desktopIds })
+    for (const m of desktopMonitors) {
+      try {
+        if (m.position) {
+          await displays.enableAtPosition(m.id, m.position.left, m.position.top)
+        } else {
+          await logger.warn('sm.close.desktop-enable-fallback', { id: m.id, label: m.label })
+          await displays.enableMonitors([m.id])
+        }
+      } catch (err) {
+        await logger.error('sm.close.desktop-enable-failed', {
+          err: String(err),
+          id: m.id,
+          label: m.label,
+        })
+      }
     }
 
     const restorePrimary = snapshot?.originalPrimaryId ?? desktopIds[0]
