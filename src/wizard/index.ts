@@ -153,8 +153,7 @@ function labelFor(row: displays.DisplayInfo): string {
 }
 
 function positionOf(row: displays.DisplayInfo): MonitorRef['position'] {
-  if (row.left === null || row.top === null) return null
-  return { left: row.left, top: row.top }
+  return row.position
 }
 
 async function pickAudio(): Promise<Config['audio'] | null> {

@@ -51,10 +51,26 @@ export function createStateMachine(config: Config): StateMachine {
       await logger.warn('sm.open.primary-enum-failed', { err: String(err) })
     }
 
+    const desktopIdSet = new Set(desktopIds)
+    let originalPrimaryId: string | null = primaryId
+    if (originalPrimaryId === tvId) {
+      await logger.info('sm.open.primary-was-tv-blocklisted', {
+        tvId,
+        fallback: desktopIds[0],
+      })
+      originalPrimaryId = desktopIds[0] ?? null
+    } else if (originalPrimaryId === null || !desktopIdSet.has(originalPrimaryId)) {
+      await logger.info('sm.open.primary-unknown-using-default', {
+        captured: originalPrimaryId,
+        fallback: desktopIds[0],
+      })
+      originalPrimaryId = desktopIds[0] ?? null
+    }
+
     snapshot = {
       audioCommandLineId: currentAudio?.commandLineId ?? null,
       audioLabel: currentAudio?.name ?? '(unknown)',
-      originalPrimaryId: primaryId,
+      originalPrimaryId,
     }
 
     try {

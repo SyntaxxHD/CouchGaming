@@ -6,6 +6,11 @@ import { run } from '../tool-runner/index.ts'
 import { parseNirCsv } from '../tool-runner/csv.ts'
 import type { MonitorIdKind } from '../config/schema.ts'
 
+export interface DisplayPosition {
+  left: number
+  top: number
+}
+
 export interface DisplayInfo {
   name: string
   monitorName: string
@@ -13,11 +18,11 @@ export interface DisplayInfo {
   shortId: string
   serial: string
   resolution: string
-  left: number | null
-  top: number | null
+  position: DisplayPosition | null
   active: boolean
   primary: boolean
   disconnected: boolean
+  raw: Record<string, string>
 }
 
 export interface StableId {
@@ -95,16 +100,20 @@ function toDisplayInfo(row: Record<string, string>): DisplayInfo {
     shortId: row['Short Monitor ID'] ?? '',
     serial: row['Serial Number'] ?? '',
     resolution: row['Resolution'] ?? '',
-    left: parseIntOrNull(row['Left']),
-    top: parseIntOrNull(row['Top']),
+    position: parsePositionCell(row['Left-Top']),
     active: yes(row['Active']),
     primary: yes(row['Primary']),
     disconnected: yes(row['Disconnected']),
+    raw: row,
   }
 }
 
-function parseIntOrNull(raw: string | undefined): number | null {
-  if (raw === undefined) return null
-  const n = parseInt(raw.trim(), 10)
-  return Number.isFinite(n) ? n : null
+function parsePositionCell(raw: string | undefined): DisplayPosition | null {
+  if (!raw) return null
+  const parts = raw.split(',').map(s => s.trim())
+  if (parts.length < 2) return null
+  const left = parseInt(parts[0]!, 10)
+  const top = parseInt(parts[1]!, 10)
+  if (!Number.isFinite(left) || !Number.isFinite(top)) return null
+  return { left, top }
 }
