@@ -145,7 +145,17 @@ async function pickDisplay(): Promise<Config['display'] | null> {
     ),
   )
 
-  return { gamingMonitor, desktopMonitors }
+  console.log(chalk.gray(`Capturing desktop layout snapshot to ${chalk.cyan(paths.desktopCfg)}`))
+  try {
+    await displays.saveConfig(paths.desktopCfg)
+  } catch (err) {
+    console.log(chalk.red('Failed to save desktop layout snapshot:') + ` ${String(err)}`)
+    console.log(chalk.red('Setup cannot continue. Fix the error and re-run --reconfigure.'))
+    return null
+  }
+  console.log(chalk.green('OK') + ' desktop layout snapshot captured.')
+
+  return { gamingMonitor, desktopMonitors, desktopCfgPath: paths.desktopCfg }
 }
 
 function labelFor(row: displays.DisplayInfo): string {

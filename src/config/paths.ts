@@ -12,6 +12,7 @@ export const paths = {
   configFile: join(appDir, 'config.json'),
   logFile: join(appDir, 'log.txt'),
   lockFile: join(appDir, 'session.lock'),
+  desktopCfg: join(appDir, 'desktop.cfg'),
   legacyGamingCfg: join(appDir, 'gaming.cfg'),
   legacyDesktopSnapshot: join(appDir, 'runtime-desktop.cfg'),
   legacyDaemonLock: join(appDir, 'daemon.lock'),

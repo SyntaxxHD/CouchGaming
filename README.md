@@ -75,7 +75,7 @@ The `build` script runs `scripts/fetch-tools.ts` first, which downloads the NirS
 ## Caveats
 
 - Big Picture close alone does not revert; you must quit Steam entirely. The trade-off buys us zero polling during gameplay.
-- CouchGaming controls which monitors are on, not their resolutions or positions. Windows remembers per-monitor settings across enable/disable, so this is usually invisible.
-- If you plug in a new monitor after setup, run `--reconfigure` so CouchGaming knows to disable it during gaming.
+- The wizard captures a snapshot of your current desktop monitor layout (resolutions, positions, primary) to `%APPDATA%\CouchGaming\desktop.cfg`. Session exit restores from that snapshot. If you change your monitor arrangement, run `--reconfigure` to re-capture it.
+- If you plug in a new monitor after setup, run `--reconfigure` so CouchGaming knows about it.
 - Config schema changes require running `--reconfigure`. Old configs are backed up to `config.corrupt-<timestamp>.json` and the session exits with code 4.
 - Unsigned binary; Windows SmartScreen will warn on first launch.

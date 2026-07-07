@@ -7,7 +7,6 @@ type State = 'Desktop' | 'Gaming'
 interface Snapshot {
   audioCommandLineId: string | null
   audioLabel: string
-  originalPrimaryId: string | null
 }
 
 export interface StateMachine {
@@ -21,8 +20,8 @@ export function createStateMachine(config: Config): StateMachine {
   let busy: Promise<unknown> = Promise.resolve()
 
   const tvId = config.display.gamingMonitor.id
-  const desktopMonitors = config.display.desktopMonitors
-  const desktopIds = desktopMonitors.map(m => m.id)
+  const desktopIds = config.display.desktopMonitors.map(m => m.id)
+  const desktopCfgPath = config.display.desktopCfgPath
 
   function serialize<T>(fn: () => Promise<T>): Promise<T> {
     const next = busy.then(fn, fn)
@@ -42,35 +41,9 @@ export function createStateMachine(config: Config): StateMachine {
     } catch (err) {
       await logger.warn('sm.open.audio-enum-failed', { err: String(err) })
     }
-
-    let primaryId: string | null = null
-    try {
-      const primary = await displays.getPrimary()
-      primaryId = primary?.id ?? null
-    } catch (err) {
-      await logger.warn('sm.open.primary-enum-failed', { err: String(err) })
-    }
-
-    const desktopIdSet = new Set(desktopIds)
-    let originalPrimaryId: string | null = primaryId
-    if (originalPrimaryId === tvId) {
-      await logger.info('sm.open.primary-was-tv-blocklisted', {
-        tvId,
-        fallback: desktopIds[0],
-      })
-      originalPrimaryId = desktopIds[0] ?? null
-    } else if (originalPrimaryId === null || !desktopIdSet.has(originalPrimaryId)) {
-      await logger.info('sm.open.primary-unknown-using-default', {
-        captured: originalPrimaryId,
-        fallback: desktopIds[0],
-      })
-      originalPrimaryId = desktopIds[0] ?? null
-    }
-
     snapshot = {
       audioCommandLineId: currentAudio?.commandLineId ?? null,
       audioLabel: currentAudio?.name ?? '(unknown)',
-      originalPrimaryId,
     }
 
     try {
@@ -111,36 +84,13 @@ export function createStateMachine(config: Config): StateMachine {
       return
     }
 
-    for (const m of desktopMonitors) {
-      try {
-        if (m.position) {
-          await displays.enableAtPosition(m.id, m.position.left, m.position.top)
-        } else {
-          await logger.warn('sm.close.desktop-enable-fallback', { id: m.id, label: m.label })
-          await displays.enableMonitors([m.id])
-        }
-      } catch (err) {
-        await logger.error('sm.close.desktop-enable-failed', {
-          err: String(err),
-          id: m.id,
-          label: m.label,
-        })
-      }
-    }
-
-    const restorePrimary = snapshot?.originalPrimaryId ?? desktopIds[0]
-    if (!snapshot?.originalPrimaryId) {
-      await logger.warn('sm.close.no-primary-snapshot', { fallback: restorePrimary })
-    }
-    if (restorePrimary) {
-      try {
-        await displays.setPrimary(restorePrimary)
-      } catch (err) {
-        await logger.warn('sm.close.setprimary-restore-failed', {
-          err: String(err),
-          id: restorePrimary,
-        })
-      }
+    try {
+      await displays.loadConfig(desktopCfgPath)
+    } catch (err) {
+      await logger.error('sm.close.load-desktop-cfg-failed', {
+        err: String(err),
+        desktopCfgPath,
+      })
     }
 
     try {
