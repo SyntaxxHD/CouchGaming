@@ -1,4 +1,4 @@
-import { logger } from "../logger/index.ts"
+import { logger } from '../logger/index.ts'
 
 export interface RunOptions {
   timeoutMs?: number
@@ -14,7 +14,7 @@ export interface RunResult {
 }
 
 export class ToolError extends Error {
-  override name = "ToolError"
+  override name = 'ToolError'
   constructor(
     public exe: string,
     public args: string[],
@@ -32,9 +32,9 @@ export async function run(exe: string, args: string[], opts: RunOptions = {}): P
 
   const proc = Bun.spawn([exe, ...args], {
     cwd: opts.cwd,
-    stdout: "pipe",
-    stderr: "pipe",
-    stdin: opts.stdin === undefined ? "ignore" : "pipe",
+    stdout: 'pipe',
+    stderr: 'pipe',
+    stdin: opts.stdin === undefined ? 'ignore' : 'pipe',
   })
 
   if (opts.stdin !== undefined && proc.stdin) {
@@ -58,7 +58,7 @@ export async function run(exe: string, args: string[], opts: RunOptions = {}): P
   clearTimeout(timer)
 
   const durationMs = Date.now() - started
-  await logger.debug("tool.run", { exe, args, code, durationMs })
+  await logger.debug('tool.run', { exe, args, code, durationMs })
 
   if (code !== 0 && !opts.allowNonZero) {
     throw new ToolError(exe, args, code, stdoutText, stderrText)

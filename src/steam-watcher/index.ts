@@ -1,8 +1,8 @@
-import { EventEmitter } from "node:events"
-import { readBigPictureValue } from "./registry.ts"
-import { logger } from "../logger/index.ts"
+import { EventEmitter } from 'node:events'
+import { readBigPictureValue } from './registry.ts'
+import { logger } from '../logger/index.ts'
 
-export type WatcherEvent = "open" | "close"
+export type WatcherEvent = 'open' | 'close'
 
 export interface SteamWatcher {
   start(): void
@@ -34,7 +34,7 @@ export function createSteamWatcher(opts: WatcherOptions): SteamWatcher {
       currentPollMs = opts.pollMs
     } catch (err) {
       currentPollMs = 5000
-      await logger.warn("watcher.reg-failed", { err: String(err) })
+      await logger.warn('watcher.reg-failed', { err: String(err) })
       schedule()
       return
     }
@@ -42,7 +42,7 @@ export function createSteamWatcher(opts: WatcherOptions): SteamWatcher {
     const value: 0 | 1 = raw === 0 ? 0 : 1
     if (raw === 0 && !steamMissingLogged) {
       steamMissingLogged = true
-      await logger.info("watcher.steam-key-missing-or-zero")
+      await logger.info('watcher.steam-key-missing-or-zero')
     }
 
     if (value === lastFired) {
@@ -59,7 +59,7 @@ export function createSteamWatcher(opts: WatcherOptions): SteamWatcher {
           const next = pendingValue
           lastFired = next
           pendingValue = null
-          emitter.emit(next === 1 ? "open" : "close")
+          emitter.emit(next === 1 ? 'open' : 'close')
         }
         debounceTimer = null
       }, opts.debounceMs)

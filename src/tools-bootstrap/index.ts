@@ -1,14 +1,14 @@
-import { mkdir, readFile, writeFile, stat, chmod } from "node:fs/promises"
-import { createHash } from "node:crypto"
-import { paths } from "../config/paths.ts"
-import { TOOL_MANIFEST } from "./manifest.ts"
-import { logger } from "../logger/index.ts"
+import { mkdir, readFile, writeFile, stat, chmod } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
+import { paths } from '../config/paths.ts'
+import { TOOL_MANIFEST } from './manifest.ts'
+import { logger } from '../logger/index.ts'
 
 export async function ensureExtracted(embedded: Record<string, Blob>): Promise<void> {
   await mkdir(paths.toolsDir, { recursive: true })
 
   for (const entry of TOOL_MANIFEST) {
-    const target = entry.filename === "MultiMonitorTool.exe" ? paths.multiMonitorTool : paths.soundVolumeView
+    const target = entry.filename === 'MultiMonitorTool.exe' ? paths.multiMonitorTool : paths.soundVolumeView
     const blob = embedded[entry.filename]
     if (!blob) {
       throw new Error(`Embedded tool missing at build time: ${entry.filename}`)
@@ -32,7 +32,7 @@ export async function ensureExtracted(embedded: Record<string, Blob>): Promise<v
     } catch {
       /* windows ignores */
     }
-    await logger.info("tools.extracted", { file: entry.filename, target })
+    await logger.info('tools.extracted', { file: entry.filename, target })
   }
 }
 
@@ -48,5 +48,5 @@ async function fileMatches(path: string, expectedSha: string | null): Promise<bo
 }
 
 export function sha256(bytes: Uint8Array | Buffer): string {
-  return createHash("sha256").update(bytes).digest("hex")
+  return createHash('sha256').update(bytes).digest('hex')
 }

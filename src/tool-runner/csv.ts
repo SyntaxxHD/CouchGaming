@@ -5,10 +5,10 @@ export function parseNirCsv(csv: string): Record<string, string>[] {
   const out: Record<string, string>[] = []
   for (let i = 1; i < rows.length; i++) {
     const row = rows[i]!
-    if (row.length === 1 && row[0]!.trim() === "") continue
+    if (row.length === 1 && row[0]!.trim() === '') continue
     const rec: Record<string, string> = {}
     for (let c = 0; c < header.length; c++) {
-      rec[header[c]!] = (row[c] ?? "").trim()
+      rec[header[c]!] = (row[c] ?? '').trim()
     }
     out.push(rec)
   }
@@ -18,7 +18,7 @@ export function parseNirCsv(csv: string): Record<string, string>[] {
 function splitCsvRows(csv: string): string[][] {
   const rows: string[][] = []
   let row: string[] = []
-  let cell = ""
+  let cell = ''
   let inQuotes = false
 
   for (let i = 0; i < csv.length; i++) {
@@ -40,22 +40,22 @@ function splitCsvRows(csv: string): string[][] {
       inQuotes = true
       continue
     }
-    if (ch === ",") {
+    if (ch === ',') {
       row.push(cell)
-      cell = ""
+      cell = ''
       continue
     }
-    if (ch === "\r") continue
-    if (ch === "\n") {
+    if (ch === '\r') continue
+    if (ch === '\n') {
       row.push(cell)
       rows.push(row)
       row = []
-      cell = ""
+      cell = ''
       continue
     }
     cell += ch
   }
-  if (cell !== "" || row.length > 0) {
+  if (cell !== '' || row.length > 0) {
     row.push(cell)
     rows.push(row)
   }

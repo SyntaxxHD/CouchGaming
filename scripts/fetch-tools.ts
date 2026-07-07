@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
-import { mkdir, writeFile, chmod } from "node:fs/promises"
-import { join, resolve } from "node:path"
-import { createHash } from "node:crypto"
-import { createInflateRaw } from "node:zlib"
-import { TOOL_MANIFEST } from "../src/tools-bootstrap/manifest.ts"
+import { mkdir, writeFile, chmod } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
+import { createHash } from 'node:crypto'
+import { createInflateRaw } from 'node:zlib'
+import { TOOL_MANIFEST } from '../src/tools-bootstrap/manifest.ts'
 
-const outDir = resolve(import.meta.dir, "..", "tools")
+const outDir = resolve(import.meta.dir, '..', 'tools')
 
 await mkdir(outDir, { recursive: true })
 
@@ -14,7 +14,7 @@ const results: Array<{ file: string; sha256: string }> = []
 for (const entry of TOOL_MANIFEST) {
   console.log(`→ ${entry.zipUrl}`)
   const res = await fetch(entry.zipUrl, {
-    headers: { "User-Agent": "CouchGaming build script" },
+    headers: { 'User-Agent': 'CouchGaming build script' },
   })
   if (!res.ok) throw new Error(`Download failed: ${entry.zipUrl} (HTTP ${res.status})`)
 
@@ -39,18 +39,18 @@ for (const entry of TOOL_MANIFEST) {
   results.push({ file: entry.filename, sha256: digest })
 }
 
-console.log("")
-console.log("Pin these SHAs in src/tools-bootstrap/manifest.ts:")
+console.log('')
+console.log('Pin these SHAs in src/tools-bootstrap/manifest.ts:')
 for (const r of results) console.log(`  ${r.file}: ${r.sha256}`)
 
 function sha256(bytes: Uint8Array): string {
-  return createHash("sha256").update(bytes).digest("hex")
+  return createHash('sha256').update(bytes).digest('hex')
 }
 
 async function extractFromZip(zip: Uint8Array, memberName: string): Promise<Uint8Array | null> {
   const view = new DataView(zip.buffer, zip.byteOffset, zip.byteLength)
   const eocdOffset = findEocd(view)
-  if (eocdOffset < 0) throw new Error("Not a ZIP file: EOCD not found")
+  if (eocdOffset < 0) throw new Error('Not a ZIP file: EOCD not found')
 
   const cdEntries = view.getUint16(eocdOffset + 10, true)
   const cdSize = view.getUint32(eocdOffset + 12, true)
@@ -58,14 +58,14 @@ async function extractFromZip(zip: Uint8Array, memberName: string): Promise<Uint
 
   let cursor = cdOffset
   for (let i = 0; i < cdEntries; i++) {
-    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error("Bad central-directory signature")
+    if (view.getUint32(cursor, true) !== 0x02014b50) throw new Error('Bad central-directory signature')
     const compressionMethod = view.getUint16(cursor + 10, true)
     const compressedSize = view.getUint32(cursor + 20, true)
     const nameLen = view.getUint16(cursor + 28, true)
     const extraLen = view.getUint16(cursor + 30, true)
     const commentLen = view.getUint16(cursor + 32, true)
     const localHeaderOffset = view.getUint32(cursor + 42, true)
-    const name = new TextDecoder("utf-8").decode(zip.subarray(cursor + 46, cursor + 46 + nameLen))
+    const name = new TextDecoder('utf-8').decode(zip.subarray(cursor + 46, cursor + 46 + nameLen))
 
     if (name === memberName) {
       return await readLocalMember(zip, view, localHeaderOffset, compressionMethod, compressedSize)
@@ -92,7 +92,7 @@ async function readLocalMember(
   compressionMethod: number,
   compressedSize: number,
 ): Promise<Uint8Array> {
-  if (view.getUint32(localHeaderOffset, true) !== 0x04034b50) throw new Error("Bad local-header signature")
+  if (view.getUint32(localHeaderOffset, true) !== 0x04034b50) throw new Error('Bad local-header signature')
   const nameLen = view.getUint16(localHeaderOffset + 26, true)
   const extraLen = view.getUint16(localHeaderOffset + 28, true)
   const dataStart = localHeaderOffset + 30 + nameLen + extraLen
@@ -111,8 +111,8 @@ function inflateRaw(input: Uint8Array): Promise<Uint8Array> {
   return new Promise((resolvePromise, rejectPromise) => {
     const stream = createInflateRaw()
     const chunks: Uint8Array[] = []
-    stream.on("data", (c: Buffer) => chunks.push(new Uint8Array(c)))
-    stream.on("end", () => {
+    stream.on('data', (c: Buffer) => chunks.push(new Uint8Array(c)))
+    stream.on('end', () => {
       const totalLen = chunks.reduce((n, c) => n + c.length, 0)
       const out = new Uint8Array(totalLen)
       let off = 0
@@ -122,7 +122,7 @@ function inflateRaw(input: Uint8Array): Promise<Uint8Array> {
       }
       resolvePromise(out)
     })
-    stream.on("error", rejectPromise)
+    stream.on('error', rejectPromise)
     stream.end(Buffer.from(input))
   })
 }

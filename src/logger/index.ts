@@ -1,8 +1,8 @@
-import { appendFile, mkdir, rename, stat, unlink } from "node:fs/promises"
-import { dirname } from "node:path"
-import { paths } from "../config/paths.ts"
+import { appendFile, mkdir, rename, stat, unlink } from 'node:fs/promises'
+import { dirname } from 'node:path'
+import { paths } from '../config/paths.ts'
 
-type Level = "debug" | "info" | "warn" | "error" | "fatal"
+type Level = 'debug' | 'info' | 'warn' | 'error' | 'fatal'
 
 const MAX_BYTES = 2 * 1024 * 1024
 const KEEP = 3
@@ -19,10 +19,10 @@ export async function log(level: Level, msg: string, ctx?: Record<string, unknow
     await mkdir(dirname(paths.logFile), { recursive: true })
     ready = true
   }
-  const line = JSON.stringify({ t: new Date().toISOString(), level, msg, ...(ctx ?? {}) }) + "\n"
+  const line = JSON.stringify({ t: new Date().toISOString(), level, msg, ...(ctx ?? {}) }) + '\n'
   if (toConsole) process.stdout.write(line)
   try {
-    await appendFile(paths.logFile, line, "utf8")
+    await appendFile(paths.logFile, line, 'utf8')
     await maybeRotate()
   } catch {
     // Log failures must never crash the daemon.
@@ -30,11 +30,11 @@ export async function log(level: Level, msg: string, ctx?: Record<string, unknow
 }
 
 export const logger = {
-  debug: (msg: string, ctx?: Record<string, unknown>) => log("debug", msg, ctx),
-  info: (msg: string, ctx?: Record<string, unknown>) => log("info", msg, ctx),
-  warn: (msg: string, ctx?: Record<string, unknown>) => log("warn", msg, ctx),
-  error: (msg: string, ctx?: Record<string, unknown>) => log("error", msg, ctx),
-  fatal: (msg: string, ctx?: Record<string, unknown>) => log("fatal", msg, ctx),
+  debug: (msg: string, ctx?: Record<string, unknown>) => log('debug', msg, ctx),
+  info: (msg: string, ctx?: Record<string, unknown>) => log('info', msg, ctx),
+  warn: (msg: string, ctx?: Record<string, unknown>) => log('warn', msg, ctx),
+  error: (msg: string, ctx?: Record<string, unknown>) => log('error', msg, ctx),
+  fatal: (msg: string, ctx?: Record<string, unknown>) => log('fatal', msg, ctx),
 }
 
 async function maybeRotate(): Promise<void> {
