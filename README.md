@@ -72,5 +72,7 @@ The `build` script runs `scripts/fetch-tools.ts` first, which downloads the NirS
 
 ## Caveats
 
-- If you change your monitor layout while in a Big Picture session, closing Big Picture restores the layout as it was when Big Picture opened, not your current mid-session tweaks.
+- CouchGaming controls which monitors are on, not their resolutions or positions. Windows remembers per-monitor settings across enable/disable, so this is usually invisible; if you rearrange monitors mid-session, Windows keeps the new arrangement after exit.
+- If you plug in a new monitor after setup, run `--reconfigure` so the daemon knows to disable it in gaming mode.
+- Config schema changes require running `--reconfigure`. Old configs are backed up to `config.corrupt-<timestamp>.json` and the daemon exits with code 4.
 - Unsigned binary; Windows SmartScreen will warn on first launch.

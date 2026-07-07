@@ -2,11 +2,10 @@ import prompts from 'prompts'
 import chalk from 'chalk'
 import { paths } from '../config/paths.ts'
 import { saveConfig, loadConfig, newConfig } from '../config/store.ts'
-import type { Config } from '../config/schema.ts'
+import type { Config, MonitorRef } from '../config/schema.ts'
 import * as displays from '../display-manager/index.ts'
 import * as audio from '../audio-manager/index.ts'
 import { installShortcut } from '../autostart/install.ts'
-import { captureGamingCfg } from './capture-gaming-cfg.ts'
 import { logger, setConsoleEcho } from '../logger/index.ts'
 
 export async function runFirstRun(): Promise<void> {
@@ -23,8 +22,6 @@ export async function runFirstRun(): Promise<void> {
   const audioPick = await pickAudio()
   if (!audioPick) return abort()
 
-  await captureGamingCfg()
-
   const config = newConfig(display, audioPick)
   await saveConfig(config)
   console.log(chalk.green('OK') + ` config written to ${chalk.cyan(paths.configFile)}`)
@@ -38,7 +35,7 @@ export async function runFirstRun(): Promise<void> {
 export async function runReconfigure(): Promise<void> {
   if (!(await ensureTty('runReconfigure'))) return
   setConsoleEcho(true)
-  const existing = await loadConfig()
+  const existing = await loadConfig().catch(() => null)
   if (!existing) return runFirstRun()
 
   const { section } = await prompts({
@@ -47,7 +44,7 @@ export async function runReconfigure(): Promise<void> {
     message: 'What would you like to change?',
     choices: [
       { title: 'Audio device only', value: 'audio' },
-      { title: 'Display / capture new gaming layout', value: 'display' },
+      { title: 'Displays (pick a new TV / redetect desktop monitors)', value: 'display' },
       { title: 'Both', value: 'both' },
       { title: 'Autostart (install/uninstall)', value: 'autostart' },
       { title: 'Cancel', value: 'cancel' },
@@ -65,7 +62,6 @@ export async function runReconfigure(): Promise<void> {
   if (section === 'display' || section === 'both') {
     const display = await pickDisplay()
     if (!display) return abort()
-    await captureGamingCfg()
     updated = { ...updated, display }
   }
   if (section === 'autostart') {
@@ -86,26 +82,64 @@ async function ensureTty(where: string): Promise<boolean> {
 async function pickDisplay(): Promise<Config['display'] | null> {
   console.log(chalk.gray('Enumerating displays...'))
   const list = await displays.enumerate()
-  if (list.length === 0) {
-    console.log(chalk.yellow('No displays found.'))
+  const active = list.filter(d => d.active && !d.disconnected)
+  if (active.length === 0) {
+    console.log(chalk.yellow('No active displays found.'))
     return null
   }
+  if (active.length === 1) {
+    console.log(chalk.yellow('Only one active display detected. Plug in your TV and rerun --reconfigure.'))
+    return null
+  }
+
   const { choice } = await prompts({
     type: 'select',
     name: 'choice',
-    message: 'Select your TV monitor (for labeling only, the layout is captured separately)',
-    choices: list.map((d, i) => ({
-      title: `${d.active ? '[ACTIVE] ' : '         '}${d.monitorName || d.name}, ${d.resolution || '?'}${d.primary ? ' (primary)' : ''}`,
+    message: 'Select your TV monitor',
+    choices: active.map((d, i) => ({
+      title: `${d.monitorName || d.name} ${chalk.gray(`(${d.resolution || '?'}${d.primary ? ', primary' : ''})`)}`,
       value: i,
     })),
   })
   if (choice === undefined) return null
-  const picked = list[choice]!
-  return {
-    gamingCfgPath: paths.gamingCfg,
-    gamingMonitorLabel: picked.monitorName || picked.name,
-    gamingMonitorDeviceName: picked.name,
+
+  const tvRow = active[choice]!
+  const tvId = displays.stableId(tvRow)
+  if (!tvId) {
+    console.log(
+      chalk.red('Could not compute a stable ID for the TV. Missing Serial Number and Short Monitor ID.'),
+    )
+    return null
   }
+  const gamingMonitor: MonitorRef = {
+    id: tvId.id,
+    idKind: tvId.idKind,
+    label: labelFor(tvRow),
+  }
+
+  const desktopMonitors: MonitorRef[] = []
+  for (let i = 0; i < active.length; i++) {
+    if (i === choice) continue
+    const row = active[i]!
+    const sid = displays.stableId(row)
+    if (!sid) {
+      console.log(chalk.yellow(`Skipping "${labelFor(row)}": no stable ID.`))
+      continue
+    }
+    desktopMonitors.push({ id: sid.id, idKind: sid.idKind, label: labelFor(row) })
+  }
+
+  console.log(
+    chalk.gray(
+      `Gaming: ${gamingMonitor.label}. Desktop monitors that will disable on Big Picture: ${desktopMonitors.map(m => m.label).join(', ') || '(none)'}`,
+    ),
+  )
+
+  return { gamingMonitor, desktopMonitors }
+}
+
+function labelFor(row: displays.DisplayInfo): string {
+  return row.monitorName || row.shortId || row.name || 'Unknown monitor'
 }
 
 async function pickAudio(): Promise<Config['audio'] | null> {

@@ -1,4 +1,3 @@
-import { stat } from 'node:fs/promises'
 import { logger } from '../logger/index.ts'
 import type { Config } from '../config/schema.ts'
 import * as displays from '../display-manager/index.ts'
@@ -20,6 +19,9 @@ export function createStateMachine(config: Config): StateMachine {
   let snapshot: Snapshot | null = null
   let busy: Promise<unknown> = Promise.resolve()
 
+  const tvId = config.display.gamingMonitor.id
+  const desktopIds = config.display.desktopMonitors.map(m => m.id)
+
   function serialize<T>(fn: () => Promise<T>): Promise<T> {
     const next = busy.then(fn, fn)
     busy = next.catch(() => undefined)
@@ -29,12 +31,6 @@ export function createStateMachine(config: Config): StateMachine {
   async function enterGaming(): Promise<void> {
     if (state === 'Gaming') {
       await logger.debug('sm.open.noop-already-gaming')
-      return
-    }
-    try {
-      await displays.saveConfig(config.runtime.desktopSnapshotPath)
-    } catch (err) {
-      await logger.error('sm.open.snapshot-failed', { err: String(err) })
       return
     }
 
@@ -50,16 +46,25 @@ export function createStateMachine(config: Config): StateMachine {
     }
 
     try {
-      await displays.loadConfig(config.display.gamingCfgPath)
+      await displays.enableMonitors([tvId])
     } catch (err) {
-      await logger.error('sm.open.display-load-failed', { err: String(err) })
+      await logger.error('sm.open.tv-enable-failed', { err: String(err), tvId })
       return
+    }
+
+    try {
+      await displays.disableMonitors(desktopIds)
+    } catch (err) {
+      await logger.error('sm.open.desktop-disable-failed', { err: String(err), ids: desktopIds })
     }
 
     try {
       await audio.setDefault(config.audio.gamingDeviceId)
     } catch (err) {
-      await logger.warn('sm.open.audio-set-failed', { err: String(err), id: config.audio.gamingDeviceId })
+      await logger.warn('sm.open.audio-set-failed', {
+        err: String(err),
+        id: config.audio.gamingDeviceId,
+      })
     }
 
     state = 'Gaming'
@@ -72,14 +77,16 @@ export function createStateMachine(config: Config): StateMachine {
       return
     }
 
-    if (await exists(config.runtime.desktopSnapshotPath)) {
-      try {
-        await displays.loadConfig(config.runtime.desktopSnapshotPath)
-      } catch (err) {
-        await logger.error('sm.close.display-restore-failed', { err: String(err) })
-      }
-    } else {
-      await logger.warn('sm.close.snapshot-missing', { path: config.runtime.desktopSnapshotPath })
+    try {
+      await displays.enableMonitors(desktopIds)
+    } catch (err) {
+      await logger.error('sm.close.desktop-enable-failed', { err: String(err), ids: desktopIds })
+    }
+
+    try {
+      await displays.disableMonitors([tvId])
+    } catch (err) {
+      await logger.warn('sm.close.tv-disable-failed', { err: String(err), tvId })
     }
 
     if (snapshot?.audioCommandLineId) {
@@ -104,14 +111,5 @@ export function createStateMachine(config: Config): StateMachine {
   return {
     onSteamOpen: () => serialize(enterGaming),
     onSteamClose: () => serialize(exitGaming),
-  }
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await stat(path)
-    return true
-  } catch {
-    return false
   }
 }

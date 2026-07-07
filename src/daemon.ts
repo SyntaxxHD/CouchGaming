@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, stat, unlink } from 'node:fs/promises'
 import { readFileSync, unlinkSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { paths } from './config/paths.ts'
@@ -22,6 +22,8 @@ export async function runDaemon(): Promise<void> {
   process.on('SIGINT', () => process.exit(0))
   process.on('SIGTERM', () => process.exit(0))
 
+  await cleanupLegacyFiles()
+
   let config
   try {
     config = await loadConfig()
@@ -34,7 +36,7 @@ export async function runDaemon(): Promise<void> {
 
   if (!config) {
     if (isInteractive) {
-      console.log('No config found. Run: CouchGaming.exe --reconfigure')
+      console.log('No usable config. Run: CouchGaming.exe --reconfigure')
     }
     await logger.fatal('daemon.no-config-non-interactive', { hint: 'run --reconfigure first' })
     process.exit(4)
@@ -108,5 +110,16 @@ function pidAlive(pid: number): boolean {
     return true
   } catch {
     return false
+  }
+}
+
+async function cleanupLegacyFiles(): Promise<void> {
+  for (const path of [paths.legacyGamingCfg, paths.legacyDesktopSnapshot]) {
+    try {
+      await unlink(path)
+      await logger.debug('daemon.legacy-cfg-removed', { path })
+    } catch {
+      /* not there, fine */
+    }
   }
 }

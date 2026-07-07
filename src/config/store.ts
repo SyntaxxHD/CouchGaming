@@ -37,7 +37,6 @@ export function defaultRuntime(): Config['runtime'] {
   return {
     pollMs: 2000,
     debounceMs: 2500,
-    desktopSnapshotPath: paths.desktopSnapshot,
   }
 }
 
