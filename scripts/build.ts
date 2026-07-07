@@ -18,7 +18,7 @@ const args = [
 if (existsSync(iconPath)) {
   args.push(`--windows-icon=${iconPath}`)
 } else {
-  console.log(`(no icon at ${iconPath} — building without --windows-icon)`)
+  console.log(`(no icon at ${iconPath}, building without --windows-icon)`)
 }
 
 console.log(`bun ${args.join(' ')}`)

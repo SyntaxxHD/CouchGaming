@@ -1,15 +1,20 @@
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, stat } from 'node:fs/promises'
 import { readFileSync, unlinkSync } from 'node:fs'
 import { dirname } from 'node:path'
 import { paths } from './config/paths.ts'
 import { loadConfig, backupCorruptConfig } from './config/store.ts'
-import { logger } from './logger/index.ts'
+import { logger, setConsoleEcho } from './logger/index.ts'
 import { createSteamWatcher } from './steam-watcher/index.ts'
 import { createStateMachine } from './state-machine/index.ts'
-import { runFirstRun } from './wizard/index.ts'
+
+const STALE_LOCK_MS = 5 * 60 * 1000
 
 export async function runDaemon(): Promise<void> {
+  const isInteractive = Boolean(process.stdin.isTTY)
+  if (isInteractive) setConsoleEcho(true)
+
   if (!(await acquireLock())) {
+    if (isInteractive) console.log('Another CouchGaming daemon is already running.')
     process.exit(0)
   }
 
@@ -28,10 +33,11 @@ export async function runDaemon(): Promise<void> {
   }
 
   if (!config) {
-    await logger.info('daemon.no-config-running-wizard')
-    releaseLockSync()
-    await runFirstRun()
-    return
+    if (isInteractive) {
+      console.log('No config found. Run: CouchGaming.exe --reconfigure')
+    }
+    await logger.fatal('daemon.no-config-non-interactive', { hint: 'run --reconfigure first' })
+    process.exit(4)
   }
 
   const sm = createStateMachine(config)
@@ -63,12 +69,28 @@ async function acquireLock(): Promise<boolean> {
   try {
     const raw = await readFile(paths.lockFile, 'utf8')
     const pid = parseInt(raw.trim(), 10)
-    if (pid && pidAlive(pid)) return false
+    if (pid && pidAlive(pid)) {
+      const age = await lockAgeMs()
+      if (age !== null && age > STALE_LOCK_MS) {
+        await logger.warn('daemon.lock-stale-taking-over', { pid, ageMs: age })
+      } else {
+        return false
+      }
+    }
   } catch {
-    /* no lock or unreadable — fine */
+    /* no lock or unreadable, fine */
   }
   await writeFile(paths.lockFile, String(process.pid), 'utf8')
   return true
+}
+
+async function lockAgeMs(): Promise<number | null> {
+  try {
+    const s = await stat(paths.lockFile)
+    return Date.now() - s.mtimeMs
+  } catch {
+    return null
+  }
 }
 
 function releaseLockSync(): void {

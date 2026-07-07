@@ -1,4 +1,5 @@
 import prompts from 'prompts'
+import chalk from 'chalk'
 import { paths } from '../config/paths.ts'
 import { saveConfig, loadConfig, newConfig } from '../config/store.ts'
 import type { Config } from '../config/schema.ts'
@@ -6,14 +7,14 @@ import * as displays from '../display-manager/index.ts'
 import * as audio from '../audio-manager/index.ts'
 import { installShortcut } from '../autostart/install.ts'
 import { captureGamingCfg } from './capture-gaming-cfg.ts'
-import { setConsoleEcho } from '../logger/index.ts'
+import { logger, setConsoleEcho } from '../logger/index.ts'
 
 export async function runFirstRun(): Promise<void> {
+  if (!(await ensureTty('runFirstRun'))) return
   setConsoleEcho(true)
   console.log('')
-  console.log('CouchGaming — first-run setup')
-  console.log('─────────────────────────────')
-  console.log('This will configure the TV output for Steam Big Picture Mode.')
+  console.log(chalk.bold.magenta('CouchGaming') + chalk.gray('  first-run setup'))
+  console.log(chalk.gray('This will configure the TV output for Steam Big Picture Mode.'))
   console.log('')
 
   const display = await pickDisplay()
@@ -26,15 +27,16 @@ export async function runFirstRun(): Promise<void> {
 
   const config = newConfig(display, audioPick)
   await saveConfig(config)
-  console.log(`Config written to ${paths.configFile}`)
+  console.log(chalk.green('OK') + ` config written to ${chalk.cyan(paths.configFile)}`)
 
   await offerAutostart()
 
   console.log('')
-  console.log('Setup complete. Launch Steam Big Picture to test.')
+  console.log(chalk.green('Setup complete.') + ' Launch Steam Big Picture to test.')
 }
 
 export async function runReconfigure(): Promise<void> {
+  if (!(await ensureTty('runReconfigure'))) return
   setConsoleEcho(true)
   const existing = await loadConfig()
   if (!existing) return runFirstRun()
@@ -72,22 +74,28 @@ export async function runReconfigure(): Promise<void> {
   }
 
   await saveConfig(updated)
-  console.log(`Config updated at ${paths.configFile}`)
+  console.log(chalk.green('OK') + ` config updated at ${chalk.cyan(paths.configFile)}`)
+}
+
+async function ensureTty(where: string): Promise<boolean> {
+  if (process.stdin.isTTY) return true
+  await logger.fatal('wizard.no-tty', { where })
+  process.exit(3)
 }
 
 async function pickDisplay(): Promise<Config['display'] | null> {
-  console.log('Enumerating displays...')
+  console.log(chalk.gray('Enumerating displays...'))
   const list = await displays.enumerate()
   if (list.length === 0) {
-    console.log('No displays found.')
+    console.log(chalk.yellow('No displays found.'))
     return null
   }
   const { choice } = await prompts({
     type: 'select',
     name: 'choice',
-    message: 'Select your TV monitor (for labeling only — the layout is captured separately)',
+    message: 'Select your TV monitor (for labeling only, the layout is captured separately)',
     choices: list.map((d, i) => ({
-      title: `${d.active ? '[ACTIVE] ' : '         '}${d.monitorName || d.name} — ${d.resolution || '?'}${d.primary ? ' (primary)' : ''}`,
+      title: `${d.active ? '[ACTIVE] ' : '         '}${d.monitorName || d.name}, ${d.resolution || '?'}${d.primary ? ' (primary)' : ''}`,
       value: i,
     })),
   })
@@ -101,11 +109,11 @@ async function pickDisplay(): Promise<Config['display'] | null> {
 }
 
 async function pickAudio(): Promise<Config['audio'] | null> {
-  console.log('Enumerating audio devices...')
+  console.log(chalk.gray('Enumerating audio devices...'))
   const all = await audio.enumerate()
   const outputs = all.filter(d => d.direction === 'Render' && !d.disabled)
   if (outputs.length === 0) {
-    console.log('No audio output devices found.')
+    console.log(chalk.yellow('No audio output devices found.'))
     return null
   }
   const { choice } = await prompts({
@@ -113,7 +121,7 @@ async function pickAudio(): Promise<Config['audio'] | null> {
     name: 'choice',
     message: 'Select your TV audio output',
     choices: outputs.map((d, i) => ({
-      title: `${d.isDefaultMultimedia ? '[DEFAULT] ' : '          '}${d.name} — ${d.deviceName}`,
+      title: `${d.isDefaultMultimedia ? '[DEFAULT] ' : '          '}${d.name}, ${d.deviceName}`,
       value: i,
     })),
   })
@@ -135,12 +143,12 @@ async function offerAutostart(): Promise<void> {
   if (!install) return
   try {
     await installShortcut()
-    console.log('Autostart shortcut installed.')
+    console.log(chalk.green('OK') + ' autostart shortcut installed.')
   } catch (err) {
-    console.log(`Autostart install failed: ${String(err)}`)
+    console.log(chalk.red('Autostart install failed:') + ` ${String(err)}`)
   }
 }
 
 function abort(): void {
-  console.log('Setup cancelled.')
+  console.log(chalk.yellow('Setup cancelled.'))
 }
