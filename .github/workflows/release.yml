@@ -19,12 +19,6 @@ jobs:
         with:
           bun-version: latest
 
-      - name: Cache bun deps
-        uses: actions/cache@v4
-        with:
-          path: ~/.bun/install/cache
-          key: bun-${{ runner.os }}-${{ hashFiles('bun.lock') }}
-
       - name: Read package version
         id: pkg
         shell: pwsh

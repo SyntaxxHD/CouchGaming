@@ -1,11 +1,13 @@
 import { mkdir, readFile, writeFile, stat, unlink } from 'node:fs/promises'
 import { readFileSync, unlinkSync } from 'node:fs'
 import { dirname } from 'node:path'
+import chalk from 'chalk'
 import { paths } from './config/paths.ts'
 import { loadConfig, backupCorruptConfig } from './config/store.ts'
 import { logger, setConsoleEcho } from './logger/index.ts'
 import { createSteamWatcher } from './steam-watcher/index.ts'
 import { createStateMachine } from './state-machine/index.ts'
+import { runFirstRun } from './wizard/index.ts'
 
 const STALE_LOCK_MS = 5 * 60 * 1000
 
@@ -36,7 +38,12 @@ export async function runDaemon(): Promise<void> {
 
   if (!config) {
     if (isInteractive) {
-      console.log('No usable config. Run: CouchGaming.exe --reconfigure')
+      await logger.info('daemon.no-config-launching-wizard')
+      releaseLockSync()
+      await runFirstRun()
+      console.log('')
+      console.log(chalk.gray('Setup done. Launch CouchGaming again (no args) to start the daemon.'))
+      return
     }
     await logger.fatal('daemon.no-config-non-interactive', { hint: 'run --reconfigure first' })
     process.exit(4)
