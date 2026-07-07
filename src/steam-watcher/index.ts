@@ -1,5 +1,5 @@
 import { EventEmitter } from 'node:events'
-import { readBigPictureValue } from './registry.ts'
+import { isBigPictureVisible } from './windows.ts'
 import { logger } from '../logger/index.ts'
 
 export type WatcherEvent = 'open' | 'close'
@@ -24,26 +24,21 @@ export function createSteamWatcher(opts: WatcherOptions): SteamWatcher {
   let pendingValue: 0 | 1 | null = null
   let debounceTimer: ReturnType<typeof setTimeout> | null = null
   let currentPollMs = opts.pollMs
-  let steamMissingLogged = false
 
   async function tick(): Promise<void> {
     if (!running) return
-    let raw: number
+    let visible: boolean
     try {
-      raw = await readBigPictureValue()
+      visible = await isBigPictureVisible()
       currentPollMs = opts.pollMs
     } catch (err) {
       currentPollMs = 5000
-      await logger.warn('watcher.reg-failed', { err: String(err) })
+      await logger.warn('watcher.scan-failed', { err: String(err) })
       schedule()
       return
     }
 
-    const value: 0 | 1 = raw === 0 ? 0 : 1
-    if (raw === 0 && !steamMissingLogged) {
-      steamMissingLogged = true
-      await logger.info('watcher.steam-key-missing-or-zero')
-    }
+    const value: 0 | 1 = visible ? 1 : 0
 
     if (value === lastFired) {
       pendingValue = null

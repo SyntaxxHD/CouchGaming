@@ -16,4 +16,5 @@ export const paths = {
   desktopSnapshot: join(appDir, 'runtime-desktop.cfg'),
   multiMonitorTool: join(toolsDir, 'MultiMonitorTool.exe'),
   soundVolumeView: join(toolsDir, 'SoundVolumeView.exe'),
+  guiPropView: join(toolsDir, 'GUIPropView.exe'),
 } as const

@@ -4,7 +4,7 @@ Windows background daemon that flips your monitors and audio output when Steam B
 
 ## What it does
 
-- Watches `HKCU\Software\Valve\Steam\BigPictureInForeground` for changes.
+- Polls Windows every ~2 s for a top-level Big Picture window (owned by `steamwebhelper.exe` or `steam.exe`).
 - When Big Picture opens: snapshots your current monitor layout and default audio device, then switches to a preconfigured TV-only layout and audio device.
 - When Big Picture closes: restores the snapshot.
 
@@ -29,33 +29,35 @@ CouchGaming.exe --verbose           # echo debug lines to the terminal
 
 ## How it works
 
-CouchGaming bundles two portable NirSoft utilities (`MultiMonitorTool.exe`, `SoundVolumeView.exe`) that are extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch and driven via CLI. Config lives at `%APPDATA%\CouchGaming\config.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
+CouchGaming bundles three portable NirSoft utilities (`MultiMonitorTool.exe`, `SoundVolumeView.exe`, `GUIPropView.exe`) that are extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch and driven via CLI. Detection works by enumerating all visible top-level windows and looking for one owned by `steamwebhelper.exe` or `steam.exe` whose title contains "big picture" (or a known localized equivalent). Config lives at `%APPDATA%\CouchGaming\config.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
 
 ## Diagnostics
 
 The daemon writes JSON-lines to `%APPDATA%\CouchGaming\log.txt`. If Big Picture is not triggering, open the log and look for these markers:
 
-| Log line                                                 | Meaning                                                                                                                                 |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `daemon.started`                                         | Daemon reached the poll loop. If missing, the daemon crashed early or is stuck.                                                         |
-| `tool.run` with `exe: "reg.exe"` every ~1.5 s            | Registry polling is working.                                                                                                            |
-| `watcher.reg-first-read`                                 | First `reg.exe` read; includes a sample of stdout for debugging locale / format issues.                                                 |
-| `watcher.reg-parse-miss`                                 | Parsed the output but did not find the DWORD. Steam is either not writing the value, or the output format differs (see `stdoutSample`). |
-| `watcher.reg-code-nonzero`                               | `reg.exe` returned non-zero. Usually means the value does not exist yet (Steam has never entered Big Picture on this account).          |
-| `watcher.steam-key-missing-or-zero`                      | Emitted once when the observed value is `0`. Not an error, just informational.                                                          |
-| `daemon.no-config-non-interactive`                       | Daemon was launched without a config file and no interactive terminal. Run `--reconfigure`. Exit code 4.                                |
-| `wizard.no-tty`                                          | The wizard was invoked with no interactive stdin. Exit code 3.                                                                          |
-| `daemon.lock-stale-taking-over`                          | An old lock file was left behind and we recovered it.                                                                                   |
-| `sm.open.snapshot-failed`, `sm.open.display-load-failed` | Big Picture was detected, but MultiMonitorTool failed. Check the `err` field.                                                           |
-| `gaming.enter`, `gaming.exit`                            | Successful transitions.                                                                                                                 |
+| Log line                                                 | Meaning                                                                                                                                                                                                    |
+| -------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `daemon.started`                                         | Daemon reached the poll loop. If missing, the daemon crashed early or is stuck.                                                                                                                            |
+| `tool.run` with `exe: "GUIPropView.exe"` every ~2 s      | Window enumeration is running.                                                                                                                                                                             |
+| `watcher.gpv-first-scan`                                 | First successful scan. Includes `totalRows`, `steamRows`, `matched` (title or null), and a sample of Steam-owned rows so you can see what titles Steam is exposing. Paste this if detection is not firing. |
+| `watcher.gpv-parse-empty`                                | GUIPropView returned no rows. Rare; usually means the CSV file could not be read back.                                                                                                                     |
+| `watcher.gpv-failed`                                     | Spawning GUIPropView failed. Check the `err` field.                                                                                                                                                        |
+| `watcher.scan-failed`                                    | A scan attempt threw. Poll backs off to 5 s and retries.                                                                                                                                                   |
+| `daemon.no-config-non-interactive`                       | Daemon was launched without a config file and no interactive terminal. Run `--reconfigure`. Exit code 4.                                                                                                   |
+| `wizard.no-tty`                                          | The wizard was invoked with no interactive stdin. Exit code 3.                                                                                                                                             |
+| `daemon.lock-stale-taking-over`                          | An old lock file was left behind and we recovered it.                                                                                                                                                      |
+| `sm.open.snapshot-failed`, `sm.open.display-load-failed` | Big Picture was detected, but MultiMonitorTool failed. Check the `err` field.                                                                                                                              |
+| `gaming.enter`, `gaming.exit`                            | Successful transitions.                                                                                                                                                                                    |
 
-Manual test that Steam is actually writing the DWORD (from `cmd`):
+Manual test that Steam is exposing a window whose title contains "Big Picture" (from `cmd`, while Big Picture is open):
 
 ```
-reg query HKCU\Software\Valve\Steam /v BigPictureInForeground
+tasklist /v /fi "IMAGENAME eq steamwebhelper.exe" /fo list
 ```
 
-Run this while Big Picture is open. If you see `REG_DWORD    0x<pid>`, Steam is doing its job and the daemon can trigger. If you see `ERROR: The system was unable to find the specified registry key or value.`, open Big Picture at least once (Steam only creates the value after its first Big Picture launch on that account).
+Look for a `Window Title:` line containing "Big Picture" (or your locale's equivalent). If the title is genuinely different, capture it with `watcher.gpv-first-scan` (run the daemon with `--verbose`) and open an issue.
+
+If you notice a GUIPropView window briefly flashing on the screen every couple of seconds, that is a bug. Open an issue.
 
 ## Build
 

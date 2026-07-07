@@ -1,5 +1,6 @@
 import mmt from '../tools/MultiMonitorTool.exe' with { type: 'file' }
 import svv from '../tools/SoundVolumeView.exe' with { type: 'file' }
+import gpv from '../tools/GUIPropView.exe' with { type: 'file' }
 import chalk from 'chalk'
 import { runDaemon } from './daemon.ts'
 import { runFirstRun, runReconfigure } from './wizard/index.ts'
@@ -10,6 +11,7 @@ import { logger, setConsoleEcho, setVerbose } from './logger/index.ts'
 const embeddedTools: Record<string, Blob> = {
   'MultiMonitorTool.exe': Bun.file(mmt),
   'SoundVolumeView.exe': Bun.file(svv),
+  'GUIPropView.exe': Bun.file(gpv),
 }
 
 async function main(): Promise<void> {

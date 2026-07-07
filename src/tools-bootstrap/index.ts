@@ -4,11 +4,20 @@ import { paths } from '../config/paths.ts'
 import { TOOL_MANIFEST } from './manifest.ts'
 import { logger } from '../logger/index.ts'
 
+const FILE_TO_PATH: Record<string, string> = {
+  'MultiMonitorTool.exe': paths.multiMonitorTool,
+  'SoundVolumeView.exe': paths.soundVolumeView,
+  'GUIPropView.exe': paths.guiPropView,
+}
+
 export async function ensureExtracted(embedded: Record<string, Blob>): Promise<void> {
   await mkdir(paths.toolsDir, { recursive: true })
 
   for (const entry of TOOL_MANIFEST) {
-    const target = entry.filename === 'MultiMonitorTool.exe' ? paths.multiMonitorTool : paths.soundVolumeView
+    const target = FILE_TO_PATH[entry.filename]
+    if (!target) {
+      throw new Error(`No path mapping for tool: ${entry.filename}`)
+    }
     const blob = embedded[entry.filename]
     if (!blob) {
       throw new Error(`Embedded tool missing at build time: ${entry.filename}`)

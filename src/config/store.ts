@@ -35,7 +35,7 @@ export async function backupCorruptConfig(): Promise<string | null> {
 
 export function defaultRuntime(): Config['runtime'] {
   return {
-    pollMs: 1500,
+    pollMs: 2000,
     debounceMs: 2500,
     desktopSnapshotPath: paths.desktopSnapshot,
   }
