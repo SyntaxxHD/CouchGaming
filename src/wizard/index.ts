@@ -135,27 +135,14 @@ async function pickDisplay(): Promise<Config['display'] | null> {
     })
   }
 
-  const desktopSummary =
-    desktopMonitors
-      .map(m => `${m.label}${m.position ? ` (at ${m.position.left},${m.position.top})` : ' (no position)'}`)
-      .join(', ') || '(none)'
+  const desktopSummary = desktopMonitors.map(m => m.label).join(', ') || '(none)'
   console.log(
     chalk.gray(
-      `Gaming: ${gamingMonitor.label}. Desktop monitors that will disable on Big Picture: ${desktopSummary}`,
+      `Gaming: ${gamingMonitor.label}. Other monitors (stay active in Windows during gaming; turn off physically if you like): ${desktopSummary}`,
     ),
   )
 
-  console.log(chalk.gray(`Capturing desktop layout snapshot to ${chalk.cyan(paths.desktopSnapshotJson)}`))
-  try {
-    await displays.snapshotToFile(paths.desktopSnapshotJson)
-  } catch (err) {
-    console.log(chalk.red('Failed to save desktop layout snapshot:') + ` ${String(err)}`)
-    console.log(chalk.red('Setup cannot continue. Fix the error and re-run --reconfigure.'))
-    return null
-  }
-  console.log(chalk.green('OK') + ' desktop layout snapshot captured.')
-
-  return { gamingMonitor, desktopMonitors, desktopSnapshotPath: paths.desktopSnapshotJson }
+  return { gamingMonitor, desktopMonitors }
 }
 
 function labelFor(row: displays.DisplayInfo): string {

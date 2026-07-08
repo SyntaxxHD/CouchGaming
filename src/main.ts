@@ -1,6 +1,5 @@
 import mmt from '../tools/MultiMonitorTool.exe' with { type: 'file' }
 import svv from '../tools/SoundVolumeView.exe' with { type: 'file' }
-import cgd from '../tools/couchgaming-display.exe' with { type: 'file' }
 import chalk from 'chalk'
 import { runSession } from './session.ts'
 import { runFirstRun, runReconfigure } from './wizard/index.ts'
@@ -11,7 +10,6 @@ import { logger, setConsoleEcho, setVerbose } from './logger/index.ts'
 const embeddedTools: Record<string, Blob> = {
   'MultiMonitorTool.exe': Bun.file(mmt),
   'SoundVolumeView.exe': Bun.file(svv),
-  'couchgaming-display.exe': Bun.file(cgd),
 }
 
 async function main(): Promise<void> {

@@ -155,6 +155,8 @@ async function cleanupLegacyFiles(): Promise<void> {
     paths.legacyGamingCfg,
     paths.legacyDesktopSnapshot,
     paths.legacyDesktopCfg,
+    paths.legacyDesktopJson,
+    paths.legacyHelperDisplay,
     paths.legacyDaemonLock,
   ]) {
     try {
