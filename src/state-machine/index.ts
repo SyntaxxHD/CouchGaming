@@ -20,8 +20,7 @@ export function createStateMachine(config: Config): StateMachine {
   let busy: Promise<unknown> = Promise.resolve()
 
   const tvId = config.display.gamingMonitor.id
-  const desktopIds = config.display.desktopMonitors.map(m => m.id)
-  const desktopCfgPath = config.display.desktopCfgPath
+  const desktopSnapshotPath = config.display.desktopSnapshotPath
 
   function serialize<T>(fn: () => Promise<T>): Promise<T> {
     const next = busy.then(fn, fn)
@@ -47,22 +46,10 @@ export function createStateMachine(config: Config): StateMachine {
     }
 
     try {
-      await displays.enableMonitors([tvId])
+      await displays.applyGaming(tvId)
     } catch (err) {
-      await logger.error('sm.open.tv-enable-failed', { err: String(err), tvId })
+      await logger.error('sm.open.apply-gaming-failed', { err: String(err), tvId })
       return
-    }
-
-    try {
-      await displays.setPrimary(tvId)
-    } catch (err) {
-      await logger.warn('sm.open.setprimary-tv-failed', { err: String(err), tvId })
-    }
-
-    try {
-      await displays.disableMonitors(desktopIds)
-    } catch (err) {
-      await logger.error('sm.open.desktop-disable-failed', { err: String(err), ids: desktopIds })
     }
 
     try {
@@ -85,18 +72,12 @@ export function createStateMachine(config: Config): StateMachine {
     }
 
     try {
-      await displays.loadConfig(desktopCfgPath)
+      await displays.applyDesktop(desktopSnapshotPath)
     } catch (err) {
-      await logger.error('sm.close.load-desktop-cfg-failed', {
+      await logger.error('sm.close.apply-desktop-failed', {
         err: String(err),
-        desktopCfgPath,
+        desktopSnapshotPath,
       })
-    }
-
-    try {
-      await displays.disableMonitors([tvId])
-    } catch (err) {
-      await logger.warn('sm.close.tv-disable-failed', { err: String(err), tvId })
     }
 
     if (snapshot?.audioCommandLineId) {

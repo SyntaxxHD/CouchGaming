@@ -1,5 +1,5 @@
-import { mkdir, readFile, unlink } from 'node:fs/promises'
-import { dirname, join } from 'node:path'
+import { readFile, unlink, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { paths } from '../config/paths.ts'
 import { run } from '../tool-runner/index.ts'
@@ -30,8 +30,6 @@ export interface StableId {
   idKind: MonitorIdKind
 }
 
-const INTER_CALL_DELAY_MS = 250
-
 export async function enumerate(): Promise<DisplayInfo[]> {
   const tmp = join(tmpdir(), `mmt-${process.pid}-${Date.now()}.csv`)
   try {
@@ -57,37 +55,17 @@ export function stableId(row: DisplayInfo): StableId | null {
   return null
 }
 
-export async function enableMonitors(ids: string[]): Promise<void> {
-  if (ids.length === 0) return
-  await run(paths.multiMonitorTool, ['/enable', ...ids])
-  await sleep(INTER_CALL_DELAY_MS)
+export async function snapshotToFile(target: string): Promise<void> {
+  const result = await run(paths.helperDisplay, ['snapshot'])
+  await writeFile(target, result.stdout, 'utf8')
 }
 
-export async function disableMonitors(ids: string[]): Promise<void> {
-  if (ids.length === 0) return
-  await run(paths.multiMonitorTool, ['/disable', ...ids])
-  await sleep(INTER_CALL_DELAY_MS)
+export async function applyGaming(tvId: string): Promise<void> {
+  await run(paths.helperDisplay, ['apply-gaming', tvId])
 }
 
-export async function setPrimary(id: string): Promise<void> {
-  if (!id) return
-  await run(paths.multiMonitorTool, ['/SetPrimary', id])
-  await sleep(INTER_CALL_DELAY_MS)
-}
-
-export async function saveConfig(target: string): Promise<void> {
-  await mkdir(dirname(target), { recursive: true })
-  await run(paths.multiMonitorTool, ['/SaveConfig', target])
-  await sleep(INTER_CALL_DELAY_MS)
-}
-
-export async function loadConfig(source: string): Promise<void> {
-  await run(paths.multiMonitorTool, ['/LoadConfig', source])
-  await sleep(INTER_CALL_DELAY_MS)
-}
-
-function sleep(ms: number): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms))
+export async function applyDesktop(snapshotPath: string): Promise<void> {
+  await run(paths.helperDisplay, ['apply-desktop', snapshotPath])
 }
 
 function toDisplayInfo(row: Record<string, string>): DisplayInfo {

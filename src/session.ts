@@ -151,7 +151,12 @@ function pidAlive(pid: number): boolean {
 }
 
 async function cleanupLegacyFiles(): Promise<void> {
-  for (const path of [paths.legacyGamingCfg, paths.legacyDesktopSnapshot, paths.legacyDaemonLock]) {
+  for (const path of [
+    paths.legacyGamingCfg,
+    paths.legacyDesktopSnapshot,
+    paths.legacyDesktopCfg,
+    paths.legacyDaemonLock,
+  ]) {
     try {
       await unlink(path)
       await logger.debug('session.legacy-file-removed', { path })

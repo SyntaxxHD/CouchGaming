@@ -19,6 +19,10 @@ jobs:
         with:
           bun-version: latest
 
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
       - name: Read package version
         id: pkg
         shell: pwsh
@@ -38,9 +42,6 @@ jobs:
 
       - name: Typecheck
         run: bun run typecheck
-
-      - name: Fetch NirSoft tools
-        run: bun run fetch-tools
 
       - name: Build
         run: bun run build

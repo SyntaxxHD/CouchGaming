@@ -6,10 +6,11 @@
   "private": true,
   "scripts": {
     "fetch-tools": "bun run scripts/fetch-tools.ts",
-    "build": "bun run fetch-tools && bun run scripts/build.ts",
+    "build-helper": "bun run scripts/build-helper.ts",
+    "build": "bun run fetch-tools && bun run build-helper && bun run scripts/build.ts",
     "dev": "bun run ./src/main.ts --reconfigure",
     "daemon:dev": "bun run ./src/main.ts",
-    "clean": "rm -rf dist tools",
+    "clean": "rm -rf dist tools helper/couchgaming-display/target",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

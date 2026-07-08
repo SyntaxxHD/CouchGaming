@@ -1,4 +1,4 @@
-export const CONFIG_VERSION = 4
+export const CONFIG_VERSION = 5
 
 export type MonitorIdKind = 'serial' | 'shortId'
 
@@ -19,7 +19,7 @@ export interface Config {
   display: {
     gamingMonitor: MonitorRef
     desktopMonitors: MonitorRef[]
-    desktopCfgPath: string
+    desktopSnapshotPath: string
   }
   audio: {
     gamingDeviceId: string
@@ -49,7 +49,7 @@ export function validateConfig(value: unknown): Config {
   const desktopMonitors = desktopMonitorsRaw.map((r, i) =>
     validateMonitorRef(r, `display.desktopMonitors[${i}]`),
   )
-  requireString(display, 'desktopCfgPath')
+  requireString(display, 'desktopSnapshotPath')
 
   const audio = value.audio
   if (!isRecord(audio)) throw new ConfigError('config.audio is missing')
@@ -66,7 +66,7 @@ export function validateConfig(value: unknown): Config {
     display: {
       gamingMonitor,
       desktopMonitors,
-      desktopCfgPath: display.desktopCfgPath as string,
+      desktopSnapshotPath: display.desktopSnapshotPath as string,
     },
     audio: {
       gamingDeviceId: audio.gamingDeviceId as string,

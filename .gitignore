@@ -140,3 +140,4 @@ tools/
 runtime-*.cfg
 *.exe
 !assets/*.exe
+helper/*/target/

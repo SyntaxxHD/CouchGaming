@@ -32,7 +32,7 @@ CouchGaming.exe --verbose             # echo debug lines to the terminal
 
 ## How it works
 
-CouchGaming bundles two portable NirSoft utilities (`MultiMonitorTool.exe`, `SoundVolumeView.exe`) that are extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch. Big Picture is launched via the `steam://open/bigpicture` URL. Steam's exit is detected event-driven via PowerShell's `Wait-Process` (zero CPU while you play). Config lives at `%APPDATA%\CouchGaming\config.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
+CouchGaming bundles three helpers into a single `.exe`, extracted to `%LOCALAPPDATA%\CouchGaming\tools\` on first launch: `MultiMonitorTool.exe` (NirSoft, used at wizard time to enumerate monitors), `SoundVolumeView.exe` (NirSoft, for audio switching), and `couchgaming-display.exe` (our own Rust binary, drives the atomic display topology switch via Windows' `SetDisplayConfig` CCD API). Big Picture is launched via the `steam://open/bigpicture` URL. Steam's exit is detected event-driven via PowerShell's `Wait-Process` (zero CPU while you play). Config lives at `%APPDATA%\CouchGaming\config.json`; the desktop layout snapshot at `%APPDATA%\CouchGaming\desktop.json`; logs at `%APPDATA%\CouchGaming\log.txt`.
 
 ## Diagnostics
 
@@ -63,12 +63,16 @@ Steam should open into Big Picture. If nothing happens, Steam is not installed o
 
 ## Build
 
-Requires [Bun](https://bun.sh) 1.2+ on Windows for the final `--compile` step (`--windows-hide-console` / `--windows-icon` are Windows-only).
+Requires [Bun](https://bun.sh) 1.2+ AND a [Rust toolchain](https://rustup.rs) with the `x86_64-pc-windows-msvc` target. On Windows the target is native; on macOS/Linux install `mingw-w64` (`brew install mingw-w64`) and use the `x86_64-pc-windows-gnu` target to cross-compile.
 
 ```
 bun install
 bun run build
 ```
+
+The `build` script (a) downloads the NirSoft binaries into `tools/` (not committed) and verifies their SHA-256, (b) builds the Rust display helper (`helper/couchgaming-display/`), (c) stages both into `tools/`, then (d) runs `bun build --compile` which embeds everything into the final `dist/CouchGaming.exe`.
+
+The Rust helper is what performs the actual monitor switching. It calls Windows' `SetDisplayConfig` (CCD API) directly, which is the only way to apply a full N-monitor topology atomically. See `helper/couchgaming-display/src/main.rs`.
 
 The `build` script runs `scripts/fetch-tools.ts` first, which downloads the NirSoft binaries into `tools/` (not committed) and verifies their SHA-256 against `src/tools-bootstrap/manifest.ts`.
 
