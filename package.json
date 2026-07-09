@@ -1,7 +1,7 @@
 {
   "name": "couchgaming",
-  "version": "0.1.0",
-  "description": "Windows background daemon that switches monitors and audio when Steam Big Picture opens.",
+  "version": "1.0.0",
+  "description": "One-shot Windows launcher for Steam Big Picture. Enables your TV, sets it as primary, launches Big Picture, restores primary and disables the TV when Steam exits.",
   "type": "module",
   "private": true,
   "scripts": {

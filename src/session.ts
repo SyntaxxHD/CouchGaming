@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile, stat, unlink } from 'node:fs/promises'
+import { mkdir, readFile, writeFile, stat } from 'node:fs/promises'
 import { readFileSync, unlinkSync } from 'node:fs'
 import { dirname } from 'node:path'
 import chalk from 'chalk'
@@ -23,8 +23,6 @@ export async function runSession(): Promise<void> {
   }
 
   process.on('exit', releaseLockSync)
-
-  await cleanupLegacyFiles()
 
   let config
   try {
@@ -147,23 +145,5 @@ function pidAlive(pid: number): boolean {
     return true
   } catch {
     return false
-  }
-}
-
-async function cleanupLegacyFiles(): Promise<void> {
-  for (const path of [
-    paths.legacyGamingCfg,
-    paths.legacyDesktopSnapshot,
-    paths.legacyDesktopCfg,
-    paths.legacyDesktopJson,
-    paths.legacyHelperDisplay,
-    paths.legacyDaemonLock,
-  ]) {
-    try {
-      await unlink(path)
-      await logger.debug('session.legacy-file-removed', { path })
-    } catch {
-      /* not there, fine */
-    }
   }
 }

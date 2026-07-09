@@ -115,7 +115,6 @@ async function pickDisplay(): Promise<Config['display'] | null> {
     id: tvId.id,
     idKind: tvId.idKind,
     label: labelFor(tvRow),
-    position: positionOf(tvRow),
   }
 
   const desktopMonitors: MonitorRef[] = []
@@ -131,7 +130,6 @@ async function pickDisplay(): Promise<Config['display'] | null> {
       id: sid.id,
       idKind: sid.idKind,
       label: labelFor(row),
-      position: positionOf(row),
     })
   }
 
@@ -147,10 +145,6 @@ async function pickDisplay(): Promise<Config['display'] | null> {
 
 function labelFor(row: displays.DisplayInfo): string {
   return row.monitorName || row.shortId || row.name || 'Unknown monitor'
-}
-
-function positionOf(row: displays.DisplayInfo): MonitorRef['position'] {
-  return row.position
 }
 
 async function pickAudio(): Promise<Config['audio'] | null> {

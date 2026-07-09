@@ -2,7 +2,7 @@ import mmt from '../tools/MultiMonitorTool.exe' with { type: 'file' }
 import svv from '../tools/SoundVolumeView.exe' with { type: 'file' }
 import chalk from 'chalk'
 import { runSession } from './session.ts'
-import { runFirstRun, runReconfigure } from './wizard/index.ts'
+import { runReconfigure } from './wizard/index.ts'
 import { installShortcut, uninstallShortcut } from './shortcut/install.ts'
 import { ensureExtracted } from './tools-bootstrap/index.ts'
 import { logger, setConsoleEcho, setVerbose } from './logger/index.ts'
@@ -43,10 +43,6 @@ async function main(): Promise<void> {
   }
   if (args.has('--reconfigure')) {
     await runReconfigure()
-    return
-  }
-  if (args.has('--wizard')) {
-    await runFirstRun()
     return
   }
 

@@ -1,17 +1,11 @@
-export const CONFIG_VERSION = 6
+export const CONFIG_VERSION = 1
 
 export type MonitorIdKind = 'serial' | 'shortId'
-
-export interface MonitorPosition {
-  left: number
-  top: number
-}
 
 export interface MonitorRef {
   id: string
   idKind: MonitorIdKind
   label: string
-  position: MonitorPosition | null
 }
 
 export interface Config {
@@ -61,10 +55,7 @@ export function validateConfig(value: unknown): Config {
 
   return {
     version: CONFIG_VERSION,
-    display: {
-      gamingMonitor,
-      desktopMonitors,
-    },
+    display: { gamingMonitor, desktopMonitors },
     audio: {
       gamingDeviceId: audio.gamingDeviceId as string,
       gamingDeviceLabel: audio.gamingDeviceLabel as string,
@@ -86,22 +77,7 @@ function validateMonitorRef(value: unknown, where: string): MonitorRef {
     throw new ConfigError(`${where}.idKind must be 'serial' or 'shortId'`)
   }
   if (typeof label !== 'string') throw new ConfigError(`${where}.label must be a string`)
-  const position = parsePosition(value.position, `${where}.position`)
-  return { id, idKind, label, position }
-}
-
-function parsePosition(value: unknown, where: string): MonitorPosition | null {
-  if (value === null || value === undefined) return null
-  if (!isRecord(value)) throw new ConfigError(`${where} must be an object or null`)
-  const left = value.left
-  const top = value.top
-  if (typeof left !== 'number' || !Number.isFinite(left)) {
-    throw new ConfigError(`${where}.left must be a number`)
-  }
-  if (typeof top !== 'number' || !Number.isFinite(top)) {
-    throw new ConfigError(`${where}.top must be a number`)
-  }
-  return { left, top }
+  return { id, idKind, label }
 }
 
 export class ConfigError extends Error {
