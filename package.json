@@ -1,0 +1,46 @@
+{
+  "name": "couchgaming",
+  "version": "1.0.0",
+  "description": "One-shot Windows launcher for Steam Big Picture. Enables your TV, sets it as primary, launches Big Picture, restores primary and disables the TV when Steam exits.",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "fetch-tools": "bun run scripts/fetch-tools.ts",
+    "build": "bun run fetch-tools && bun run scripts/build.ts",
+    "dev": "bun run ./src/main.ts --reconfigure",
+    "daemon:dev": "bun run ./src/main.ts",
+    "clean": "rm -rf dist tools",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "bun run format:check && bun run lint && bun run typecheck",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "chalk": "^5.6.2",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.14.0",
+    "@types/prompts": "^2.4.9",
+    "bun-types": "latest",
+    "eslint": "^9.14.0",
+    "eslint-config-prettier": "^9.1.0",
+    "husky": "^9.1.6",
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.3.3",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.14.0"
+  },
+  "lint-staged": {
+    "*.{ts,mjs,js}": [
+      "prettier --check",
+      "eslint --max-warnings=0"
+    ],
+    "*.{json,yml,yaml,md}": [
+      "prettier --check"
+    ]
+  }
+}

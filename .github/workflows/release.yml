@@ -1,0 +1,58 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Read package version
+        id: pkg
+        shell: pwsh
+        run: |
+          $v = (Get-Content package.json | ConvertFrom-Json).version
+          "version=$v" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "tag=v$v"    | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Format check
+        run: bun run format:check
+
+      - name: Lint
+        run: bun run lint
+
+      - name: Typecheck
+        run: bun run typecheck
+
+      - name: Build
+        run: bun run build
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CouchGaming-${{ steps.pkg.outputs.version }}
+          path: dist/CouchGaming.exe
+
+      - name: Create or update release
+        if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.pkg.outputs.tag }}
+          name: CouchGaming ${{ steps.pkg.outputs.version }}
+          files: dist/CouchGaming.exe
+          fail_on_unmatched_files: true
