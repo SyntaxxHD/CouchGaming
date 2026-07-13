@@ -77,9 +77,9 @@ function colorFor(level: Level): (s: string) => string {
 }
 
 function tagFor(msg: string): string {
-  if (msg === 'gaming.enter') return chalk.magenta('[TV]   ')
-  if (msg === 'gaming.exit') return chalk.blue('[Desk] ')
-  if (msg === 'daemon.started') return chalk.green('[OK]   ')
+  if (msg.startsWith('Switched to gaming mode')) return chalk.magenta('[TV]   ')
+  if (msg.startsWith('Switched back to desktop mode')) return chalk.blue('[Desk] ')
+  if (msg.startsWith('Waiting for Steam to exit')) return chalk.green('[OK]   ')
   return ''
 }
 

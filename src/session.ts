@@ -13,6 +13,18 @@ import { waitForProcessExit } from './session/wait-steam-exit.ts'
 const STALE_LOCK_MS = 5 * 60 * 1000
 const STEAM_LAUNCH_TIMEOUT_MS = 30_000
 
+export async function runReset(): Promise<void> {
+  const config = await loadConfig().catch(() => null)
+  if (!config) {
+    console.log(chalk.red('No config found. Nothing to reset.'))
+    return
+  }
+  const sm = createStateMachine(config)
+  await logger.info('Forcing reset to desktop mode.')
+  await sm.onSteamClose()
+  await logger.info('Reset complete.')
+}
+
 export async function runSession(): Promise<void> {
   const isInteractive = Boolean(process.stdin.isTTY)
   if (isInteractive) setConsoleEcho(true)

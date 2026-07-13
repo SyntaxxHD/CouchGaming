@@ -22,6 +22,7 @@ Run `CouchGaming.exe`. It:
 ```
 CouchGaming.exe                       # go gaming (first run: runs the wizard first)
 CouchGaming.exe --reconfigure         # re-run the setup wizard
+CouchGaming.exe --reset               # force TV off and restore primary (use if a crash left things stuck)
 CouchGaming.exe --install-shortcut    # add a Start Menu shortcut
 CouchGaming.exe --uninstall-shortcut  # remove it
 CouchGaming.exe --verbose             # echo debug lines to the terminal

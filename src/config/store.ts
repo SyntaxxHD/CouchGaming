@@ -33,19 +33,11 @@ export async function backupCorruptConfig(): Promise<string | null> {
   return target
 }
 
-export function defaultRuntime(): Config['runtime'] {
-  return {
-    pollMs: 2000,
-    debounceMs: 2500,
-  }
-}
-
 export function newConfig(display: Config['display'], audio: Config['audio']): Config {
   return {
     version: CONFIG_VERSION,
     display,
     audio,
-    runtime: defaultRuntime(),
   }
 }
 

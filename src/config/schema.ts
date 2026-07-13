@@ -18,10 +18,6 @@ export interface Config {
     gamingDeviceId: string
     gamingDeviceLabel: string
   }
-  runtime: {
-    pollMs: number
-    debounceMs: number
-  }
 }
 
 export function validateConfig(value: unknown): Config {
@@ -48,21 +44,12 @@ export function validateConfig(value: unknown): Config {
   requireString(audio, 'gamingDeviceId')
   requireString(audio, 'gamingDeviceLabel')
 
-  const runtime = value.runtime
-  if (!isRecord(runtime)) throw new ConfigError('config.runtime is missing')
-  requireNumber(runtime, 'pollMs')
-  requireNumber(runtime, 'debounceMs')
-
   return {
     version: CONFIG_VERSION,
     display: { gamingMonitor, desktopMonitors },
     audio: {
       gamingDeviceId: audio.gamingDeviceId as string,
       gamingDeviceLabel: audio.gamingDeviceLabel as string,
-    },
-    runtime: {
-      pollMs: runtime.pollMs as number,
-      debounceMs: runtime.debounceMs as number,
     },
   }
 }
@@ -91,11 +78,5 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 function requireString(obj: Record<string, unknown>, key: string): void {
   if (typeof obj[key] !== 'string' || obj[key] === '') {
     throw new ConfigError(`missing or empty string: ${key}`)
-  }
-}
-
-function requireNumber(obj: Record<string, unknown>, key: string): void {
-  if (typeof obj[key] !== 'number' || !Number.isFinite(obj[key])) {
-    throw new ConfigError(`missing or invalid number: ${key}`)
   }
 }
